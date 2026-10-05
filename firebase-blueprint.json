@@ -1,0 +1,210 @@
+{
+  "entities": {
+    "StaffUser": {
+      "title": "StaffUser",
+      "description": "Employee profile containing identity, role, position, hourly rate, PIN, and onboarding status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "firstName": { "type": "string", "maxLength": 64 },
+        "lastName": { "type": "string", "maxLength": 64 },
+        "email": { "type": "string", "maxLength": 128 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "role": { "type": "string", "enum": ["manager", "staff"] },
+        "staffType": { "type": "string", "enum": ["wait_staff", "bar_staff", "kitchen_staff"] },
+        "position": { "type": "string", "maxLength": 64 },
+        "hourlyRate": { "type": "number" },
+        "pin": { "type": "string", "maxLength": 4, "pattern": "^\\d{4}$" },
+        "onboardingCompleted": { "type": "boolean" },
+        "onboardingStatus": { "type": "string", "enum": ["not_started", "in_progress", "submitted", "approved", "rejected"] },
+        "onboardingSubmittedAt": { "type": "string", "maxLength": 32 },
+        "tfnProvided": { "type": "boolean" },
+        "superChosen": { "type": "boolean" },
+        "foodSafetyCertified": { "type": "boolean" }
+      },
+      "required": ["id", "firstName", "lastName", "role", "position"]
+    },
+    "ShiftSlot": {
+      "title": "ShiftSlot",
+      "description": "Scheduled shift slot for weekly restaurant roster.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "day": { "type": "string", "enum": ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] },
+        "shiftType": { "type": "string", "enum": ["lunch", "dinner"] },
+        "requiredStaffType": { "type": "string", "enum": ["wait_staff", "bar_staff", "kitchen_staff"] },
+        "assignedStaffId": { "type": "string", "maxLength": 64 },
+        "startTime": { "type": "string", "maxLength": 8 },
+        "endTime": { "type": "string", "maxLength": 8 },
+        "status": { "type": "string", "enum": ["draft", "published"] }
+      },
+      "required": ["id", "day", "shiftType", "requiredStaffType", "startTime", "endTime", "status"]
+    },
+    "StaffWeeklyAvailability": {
+      "title": "StaffWeeklyAvailability",
+      "description": "Staff weekly availability submission for upcoming roster.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "staffId": { "type": "string", "maxLength": 64 },
+        "weekStartDate": { "type": "string", "maxLength": 32 },
+        "submittedAt": { "type": "string", "maxLength": 64 },
+        "availabilities": { "type": "object" }
+      },
+      "required": ["id", "staffId", "weekStartDate", "submittedAt", "availabilities"]
+    },
+    "ClockRecord": {
+      "title": "ClockRecord",
+      "description": "Punch clock record for time & attendance tracking.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "staffId": { "type": "string", "maxLength": 64 },
+        "staffName": { "type": "string", "maxLength": 128 },
+        "position": { "type": "string", "maxLength": 64 },
+        "date": { "type": "string", "maxLength": 16 },
+        "shiftType": { "type": "string", "enum": ["lunch", "dinner"] },
+        "clockInTime": { "type": "string", "maxLength": 8 },
+        "clockOutTime": { "type": "string", "maxLength": 8 },
+        "breakMinutes": { "type": "number" },
+        "breakStartTime": { "type": "string", "maxLength": 8 },
+        "totalHours": { "type": "number" },
+        "status": { "type": "string", "enum": ["clocked_in", "on_break", "completed", "approved"] },
+        "hourlyRate": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 512 }
+      },
+      "required": ["id", "staffId", "staffName", "position", "date", "shiftType", "clockInTime", "status"]
+    },
+    "TaskItem": {
+      "title": "TaskItem",
+      "description": "Operational task assigned to staff or roles.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 1024 },
+        "taskType": { "type": "string", "enum": ["recurring_weekly", "one_off"] },
+        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+        "shift": { "type": "string", "enum": ["lunch", "dinner", "all"] },
+        "targetRole": { "type": "string", "enum": ["wait_staff", "bar_staff", "kitchen_staff", "all"] },
+        "assignedToStaffId": { "type": "string", "maxLength": 64 },
+        "assignedStaffName": { "type": "string", "maxLength": 128 },
+        "assignedByManager": { "type": "string", "maxLength": 128 },
+        "isCompleted": { "type": "boolean" },
+        "completedByStaffName": { "type": "string", "maxLength": 128 },
+        "completedAt": { "type": "string", "maxLength": 64 },
+        "dueDate": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "taskType", "priority", "shift", "targetRole", "isCompleted"]
+    },
+    "ChecklistTask": {
+      "title": "ChecklistTask",
+      "description": "Daily food safety, prep, bar, or closing checklist task.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 1024 },
+        "category": { "type": "string", "enum": ["opening", "closing", "cleaning", "food_safety", "bar", "kitchen"] },
+        "shift": { "type": "string", "enum": ["lunch", "dinner", "all"] },
+        "assignedRole": { "type": "string", "enum": ["wait_staff", "bar_staff", "kitchen_staff", "all"] },
+        "isCompleted": { "type": "boolean" },
+        "completedByStaffName": { "type": "string", "maxLength": 128 },
+        "completedAt": { "type": "string", "maxLength": 64 },
+        "photoEvidenceRequired": { "type": "boolean" },
+        "photos": { "type": "array" }
+      },
+      "required": ["id", "title", "category", "shift", "assignedRole", "isCompleted"]
+    },
+    "RestaurantDocument": {
+      "title": "RestaurantDocument",
+      "description": "Restaurant operational policy, compliance document, or staff onboarding file.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 256 },
+        "category": { "type": "string", "enum": ["Food Safety", "Staff Handbook", "SOP & Recipes", "Fair Work & Awards", "Staff Submission", "Tax & Super", "General"] },
+        "fileName": { "type": "string", "maxLength": 256 },
+        "fileSize": { "type": "string", "maxLength": 32 },
+        "fileUrl": { "type": "string", "maxLength": 2048 },
+        "uploadedBy": { "type": "string", "maxLength": 128 },
+        "uploadedFor": { "type": "string", "maxLength": 64 },
+        "uploadedAt": { "type": "string", "maxLength": 32 },
+        "description": { "type": "string", "maxLength": 512 }
+      },
+      "required": ["id", "title", "category", "fileName", "uploadedBy", "uploadedAt"]
+    },
+    "AuditLogEntry": {
+      "title": "AuditLogEntry",
+      "description": "Chronological audit event tracking key actions, schedule updates, exports, and PIN overrides.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "timestamp": { "type": "string", "maxLength": 64 },
+        "displayTime": { "type": "string", "maxLength": 64 },
+        "actionType": { "type": "string", "enum": ["pin_override", "pin_auth", "availability_submit", "schedule_update", "schedule_send", "timesheet_export", "sunday_close", "timesheet_approval", "timesheet_edit", "staff_management", "system"] },
+        "title": { "type": "string", "maxLength": 256 },
+        "details": { "type": "string", "maxLength": 2048 },
+        "actorName": { "type": "string", "maxLength": 128 },
+        "actorRole": { "type": "string", "enum": ["manager", "staff", "system"] },
+        "actorId": { "type": "string", "maxLength": 64 },
+        "severity": { "type": "string", "enum": ["info", "warning", "critical", "success"] },
+        "terminal": { "type": "string", "maxLength": 128 },
+        "metadata": { "type": "object" }
+      },
+      "required": ["id", "timestamp", "actionType", "title", "details", "actorName", "actorRole", "severity"]
+    },
+    "SystemState": {
+      "title": "SystemState",
+      "description": "Restaurant weekly schedule cycle phase and operational state.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "cyclePhase": { "type": "string", "enum": ["OPEN", "LOCKED", "SCHEDULE_SENT", "CLOSED_EXPORTED"] },
+        "isScheduleSent": { "type": "boolean" },
+        "lastScheduleSentAt": { "type": "string", "maxLength": 64 },
+        "lastTimesheetExportedAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "cyclePhase", "isScheduleSent"]
+    }
+  },
+  "firestore": {
+    "/staffUsers/{staffId}": {
+      "schema": { "$ref": "#/entities/StaffUser" },
+      "description": "Employee directory and profile credentials."
+    },
+    "/shifts/{shiftId}": {
+      "schema": { "$ref": "#/entities/ShiftSlot" },
+      "description": "Weekly restaurant shift schedule roster."
+    },
+    "/availabilities/{staffId}": {
+      "schema": { "$ref": "#/entities/StaffWeeklyAvailability" },
+      "description": "Staff submitted weekly availability records."
+    },
+    "/clockRecords/{recordId}": {
+      "schema": { "$ref": "#/entities/ClockRecord" },
+      "description": "Timeclock attendance punch records."
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/TaskItem" },
+      "description": "Restaurant duties and assigned task lists."
+    },
+    "/checklists/{checklistId}": {
+      "schema": { "$ref": "#/entities/ChecklistTask" },
+      "description": "Daily food safety and station prep checklists."
+    },
+    "/documents/{documentId}": {
+      "schema": { "$ref": "#/entities/RestaurantDocument" },
+      "description": "Restaurant operational guidelines, files, and onboarding submissions."
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLogEntry" },
+      "description": "Manager accountability audit logs for security, roster, and payroll events."
+    },
+    "/systemState/{stateId}": {
+      "schema": { "$ref": "#/entities/SystemState" },
+      "description": "Global restaurant weekly roster cycle state."
+    }
+  }
+}

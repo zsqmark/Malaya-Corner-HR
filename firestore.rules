@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isManager() {
+      return isSignedIn() && (
+        request.auth.token.email == 'sunnybank@malayacorner.com.au' ||
+        request.auth.token.email == 'mark.zhang@malayacorner.com.au' ||
+        exists(/databases/$(database)/documents/staffUsers/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/staffUsers/$(request.auth.uid)).data.role == 'manager'
+      );
+    }
+
+    // Health check endpoint for connection verification
+    match /test/connection {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Staff Users Collection
+    match /staffUsers/{staffId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Shifts Collection
+    match /shifts/{shiftId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Weekly Availability Collection
+    match /availabilities/{staffId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Clock Records Collection (Punch Clock)
+    match /clockRecords/{recordId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Tasks Collection
+    match /tasks/{taskId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Daily Checklist Collection
+    match /checklists/{checklistId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Restaurant Documents Collection
+    match /documents/{documentId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Audit Logs Collection (Tamper-evident operational trail)
+    match /auditLogs/{logId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if false; // Immutable audit log
+    }
+
+    // Global System State
+    match /systemState/{stateId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}
