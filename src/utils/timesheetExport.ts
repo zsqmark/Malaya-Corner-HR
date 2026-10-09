@@ -272,6 +272,36 @@ export const PICTURE_SHEET_2_DATA: StaffWeeklyTimesheetRow[] = PICTURE_REFERENCE
 export const PICTURE_COMBINED_DATA: StaffWeeklyTimesheetRow[] = PICTURE_REFERENCE_DATA;
 
 /**
+ * Safely resolves any shift pairs array into guaranteed [Lunch, Dinner] slots.
+ * Ensures a dinner shift NEVER renders in the lunch sub-row, and a staff member
+ * can NEVER have two dinner shifts on the same day.
+ */
+export function resolveDayShifts(pairs: ShiftTimePair[] = []): { lunch: ShiftTimePair; dinner: ShiftTimePair } {
+  const empty: ShiftTimePair = { start: '', finish: '' };
+  if (!pairs || pairs.length === 0) {
+    return { lunch: empty, dinner: empty };
+  }
+
+  let lunch: ShiftTimePair = empty;
+  let dinner: ShiftTimePair = empty;
+
+  for (const p of pairs) {
+    if (!p || !p.start) continue;
+    const hour = parseInt(p.start.split(':')[0], 10);
+    // Lunch service window starts before 16:00 (e.g. 11:00, 11:15, 11:30)
+    if (!isNaN(hour) && hour < 16) {
+      if (!lunch.start) lunch = p;
+    } else {
+      // Dinner service window starts at or after 16:00 (e.g. 16:30, 16:45, 17:00, 18:00)
+      // Only the first valid dinner shift is kept - a staff member cannot take 2 dinner shifts on the same day!
+      if (!dinner.start) dinner = p;
+    }
+  }
+
+  return { lunch, dinner };
+}
+
+/**
  * Compiles live app state into the row-by-row structure matching the weekly working hours grid.
  */
 export function compileStaffTimesheetRows(
@@ -331,7 +361,14 @@ export function compileStaffTimesheetRows(
     };
 
     DAYS_OF_WEEK.forEach((day) => {
-      const pairs: ShiftTimePair[] = [];
+      let lunchPair: ShiftTimePair = { start: '', finish: '' };
+      let dinnerPair: ShiftTimePair = { start: '', finish: '' };
+
+      const isLunchTime = (t?: string) => {
+        if (!t) return false;
+        const hour = parseInt(t.split(':')[0], 10);
+        return !isNaN(hour) && hour < 16;
+      };
 
       // 1. Clock records for this staff & day
       if (mode === 'clock_records' || mode === 'hybrid') {
@@ -339,7 +376,6 @@ export function compileStaffTimesheetRows(
           if (rec.staffId !== staff.id && rec.staffName !== `${staff.firstName} ${staff.lastName}` && rec.staffName !== staff.firstName) {
             return false;
           }
-          // Infer day of week from date if available, or compare day
           if (rec.date) {
             try {
               const parts = rec.date.split('-');
@@ -352,7 +388,7 @@ export function compileStaffTimesheetRows(
                 return dayMap[localDate.getDay()] === day;
               }
               const d = new Date(rec.date);
-              const dayIndex = d.getDay(); // 0 is SUN, 1 is MON...
+              const dayIndex = d.getDay();
               const dayMap: DayOfWeek[] = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
               return dayMap[dayIndex] === day;
             } catch {
@@ -362,34 +398,53 @@ export function compileStaffTimesheetRows(
           return false;
         });
 
+        // Place into strictly one lunch slot and one dinner slot - NEVER allow 2 dinners on the same day!
         staffClockRecs.forEach((cr) => {
-          if (cr.clockInTime) {
-            pairs.push({
-              start: cr.clockInTime,
-              finish: cr.clockOutTime || '',
-            });
+          if (!cr.clockInTime) return;
+          const isLunch = cr.shiftType === 'lunch' || isLunchTime(cr.clockInTime);
+          if (isLunch) {
+            if (!lunchPair.start) {
+              lunchPair = {
+                start: cr.clockInTime,
+                finish: cr.clockOutTime || '',
+              };
+            }
+          } else {
+            // Dinner shift: only ONE dinner shift per day!
+            if (!dinnerPair.start) {
+              dinnerPair = {
+                start: cr.clockInTime,
+                finish: cr.clockOutTime || '',
+              };
+            }
           }
         });
       }
 
-      // 2. Scheduled shifts for this staff & day
-      if ((mode === 'shifts' || (mode === 'hybrid' && pairs.length === 0))) {
+      // 2. Scheduled shifts fallback for this staff & day
+      if (mode === 'shifts' || (mode === 'hybrid' && (!lunchPair.start || !dinnerPair.start))) {
         const staffShifts = shifts.filter(
           (s) => s.assignedStaffId === staff.id && s.day === day && s.status === 'published'
         );
 
-        // Sort lunch before dinner
-        staffShifts.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-
         staffShifts.forEach((s) => {
-          pairs.push({
-            start: s.startTime || '',
-            finish: s.endTime || (s.shiftType === 'lunch' ? '15:00' : '21:30'),
-          });
+          const isLunch = s.shiftType === 'lunch' || isLunchTime(s.startTime);
+          if (isLunch && !lunchPair.start) {
+            lunchPair = {
+              start: s.startTime || '',
+              finish: s.endTime || '15:00',
+            };
+          } else if (!isLunch && !dinnerPair.start) {
+            dinnerPair = {
+              start: s.startTime || '',
+              finish: s.endTime || '21:30',
+            };
+          }
         });
       }
 
-      daysData[day] = pairs;
+      // Slot 0 is ALWAYS Lunch, Slot 1 is ALWAYS Dinner
+      daysData[day] = [lunchPair, dinnerPair];
     });
 
     return {
@@ -603,10 +658,9 @@ export async function createWeeklyTimesheetWorkbook(options: ExportWeeklyTimeshe
       const finishColIndex = startColIndex + 1;
 
       const pairs = row.days[day] || [];
-      const p1 = pairs[0];
-      const p2 = pairs[1];
+      const { lunch: p1, dinner: p2 } = resolveDayShifts(pairs);
 
-      // Sub-row 1: Shift 1
+      // Sub-row 1: Shift 1 (Lunch)
       const startCell1 = worksheet.getCell(r1, startColIndex);
       const finishCell1 = worksheet.getCell(r1, finishColIndex);
       startCell1.value = p1?.start || '';

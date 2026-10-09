@@ -13,7 +13,7 @@ import {
   Info,
   Clock,
   Calendar,
-  KeyRound,
+  LogIn,
   FileSpreadsheet,
   User,
   Terminal,

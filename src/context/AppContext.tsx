@@ -234,7 +234,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [clockRecords, setClockRecords] = useState<ClockRecord[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CLOCK_RECORDS);
-    const source: ClockRecord[] = saved ? JSON.parse(saved) : INITIAL_CLOCK_RECORDS;
+    let source: ClockRecord[] = [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          source = parsed;
+        }
+      } catch {
+        // fallback to INITIAL_CLOCK_RECORDS
+      }
+    }
+    if (source.length === 0) {
+      source = INITIAL_CLOCK_RECORDS;
+    }
     // Normalize all clock records to 15-minute intervals (:00, :15, :30, :45)
     return source.map((rec) => {
       const roundedIn = roundTimeTo15Minutes(rec.clockInTime);
@@ -544,6 +557,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (!snapshot.empty) {
             const remoteClock = snapshot.docs.map((d) => d.data() as ClockRecord);
             setClockRecords(remoteClock);
+          } else if (INITIAL_CLOCK_RECORDS.length > 0) {
+            INITIAL_CLOCK_RECORDS.forEach((rec) => {
+              setDoc(doc(db, 'clockRecords', rec.id), sanitizeForFirestore(rec)).catch((err) =>
+                handleFirestoreError(err, OperationType.WRITE, `clockRecords/${rec.id}`)
+              );
+            });
+            setClockRecords(INITIAL_CLOCK_RECORDS);
           } else {
             setClockRecords([]);
           }
@@ -1248,37 +1268,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const simulated: ClockRecord[] = [];
     const days: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
     const activeStaffMembers = staffUsers.filter((s) => s.role === 'staff');
-    let counter = 1;
-    days.forEach((day, dayIndex) => {
+    let counter = Date.now();
+
+    const lunchIns = ['11:00', '11:15', '11:30'];
+    const lunchOuts = ['14:30', '14:45', '15:00', '15:15'];
+    const dinnerIns = ['16:30', '16:45', '17:00'];
+    const dinnerOuts = ['21:30', '21:45', '22:00', '22:15'];
+
+    days.forEach((_, dayIndex) => {
       const dateStr = `2026-09-${String(7 + dayIndex).padStart(2, '0')}`;
-      activeStaffMembers.slice(0, 5).forEach((staff) => {
+      // Lunch shifts
+      activeStaffMembers.slice(0, 6).forEach((staff, idx) => {
+        const inTime = lunchIns[idx % lunchIns.length];
+        const outTime = lunchOuts[(idx + 1) % lunchOuts.length];
+        const breakM = idx % 2 === 0 ? 15 : 0;
+        const inMins = parseTimeToMinutes(inTime) ?? 0;
+        const outMins = parseTimeToMinutes(outTime) ?? 0;
+        const totalHours = Number(((outMins - inMins - breakM) / 60).toFixed(2));
+
         simulated.push({
-          id: `sim-rec-${counter++}`,
+          id: `sim-clk-${counter++}`,
           staffId: staff.id,
           staffName: `${staff.firstName} ${staff.lastName}`,
           position: staff.position,
           date: dateStr,
           shiftType: 'lunch',
-          clockInTime: '11:15',
-          clockOutTime: '15:00',
-          breakMinutes: 15,
-          totalHours: 3.5,
+          clockInTime: inTime,
+          clockOutTime: outTime,
+          breakMinutes: breakM,
+          totalHours,
           status: 'completed',
           hourlyRate: staff.hourlyRate,
+          notes: 'Standard lunch roster service',
+        });
+      });
+
+      // Dinner shifts
+      activeStaffMembers.slice(4, 11).forEach((staff, idx) => {
+        const inTime = dinnerIns[idx % dinnerIns.length];
+        const outTime = dinnerOuts[(idx + 2) % dinnerOuts.length];
+        const breakM = 30;
+        const inMins = parseTimeToMinutes(inTime) ?? 0;
+        const outMins = parseTimeToMinutes(outTime) ?? 0;
+        const totalHours = Number(((outMins - inMins - breakM) / 60).toFixed(2));
+
+        simulated.push({
+          id: `sim-clk-${counter++}`,
+          staffId: staff.id,
+          staffName: `${staff.firstName} ${staff.lastName}`,
+          position: staff.position,
+          date: dateStr,
+          shiftType: 'dinner',
+          clockInTime: inTime,
+          clockOutTime: outTime,
+          breakMinutes: breakM,
+          totalHours,
+          status: idx % 3 === 0 ? 'approved' : 'completed',
+          hourlyRate: staff.hourlyRate,
+          notes: 'Dinner rush & evening closing duties',
         });
       });
     });
+
     setClockRecords(simulated);
     try {
       for (const rec of simulated) {
-        await setDoc(doc(db, 'clockRecords', rec.id), rec).catch((err) =>
+        await setDoc(doc(db, 'clockRecords', rec.id), sanitizeForFirestore(rec)).catch((err) =>
           handleFirestoreError(err, OperationType.WRITE, `clockRecords/${rec.id}`)
         );
       }
       addAuditLog({
         actionType: 'schedule_update',
         title: 'Weekly Timesheet Punches Generated',
-        details: `Simulated ${simulated.length} complete clock in and clock out records for current staff across Monday to Sunday for timesheet preview & export.`,
+        details: `Simulated ${simulated.length} complete lunch and dinner clock in and clock out records for current staff across Monday to Sunday.`,
         actorName: `${activeStaff.firstName} ${activeStaff.lastName}`,
         actorRole: 'manager',
         severity: 'info',

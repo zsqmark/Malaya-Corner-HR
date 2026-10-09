@@ -314,14 +314,11 @@ export const StaffAvailability: React.FC = () => {
                 <div key={day} className="flex flex-col bg-white">
                   {/* Day Header */}
                   <div
-                    className={`p-2.5 sm:p-3 border-b border-slate-200 text-center flex md:flex-col items-center justify-between md:justify-center ${
+                    className={`py-2.5 px-3 border-b border-slate-200 text-center flex items-center justify-center ${
                       isWeekend ? 'bg-orange-50/60' : 'bg-slate-100/70'
                     }`}
                   >
                     <div className="font-extrabold text-sm text-slate-800">{day}</div>
-                    <div className="text-[10px] text-slate-500 uppercase font-semibold">
-                      {isWeekend ? 'Peak Trading' : 'Standard'}
-                    </div>
                   </div>
 
                   {/* Shifts Toggles: 2 columns on mobile, vertical stack on desktop */}

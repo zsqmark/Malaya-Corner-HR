@@ -8,9 +8,6 @@ import {
   Printer,
   Info,
   Check,
-  Zap,
-  RefreshCw,
-  CheckCircle2,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { DayOfWeek } from '../../types';
@@ -20,6 +17,7 @@ import {
   downloadWeeklyTimesheetExcel,
   PICTURE_REFERENCE_DATA,
   StaffWeeklyTimesheetRow,
+  resolveDayShifts,
 } from '../../utils/timesheetExport';
 
 interface WeeklyTimesheetExportModalProps {
@@ -33,7 +31,7 @@ export const WeeklyTimesheetExportModal: React.FC<WeeklyTimesheetExportModalProp
   onClose,
   defaultDateRange = '07/09/2026 - 13/09/2026',
 }) => {
-  const { staffUsers, shifts, clockRecords, seedWeeklyTimesheetClockRecords } = useApp();
+  const { staffUsers, shifts, clockRecords } = useApp();
 
   const [dateRangeStr, setDateRangeStr] = useState(defaultDateRange);
   const [exportMode, setExportMode] = useState<
@@ -41,22 +39,7 @@ export const WeeklyTimesheetExportModal: React.FC<WeeklyTimesheetExportModalProp
   >('hybrid');
   const [includeEmptyRows, setIncludeEmptyRows] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-  const [seedSuccessMsg, setSeedSuccessMsg] = useState<string | null>(null);
   const printAreaRef = useRef<HTMLDivElement>(null);
-
-  const handleSimulatePunches = async () => {
-    setIsSeeding(true);
-    try {
-      await seedWeeklyTimesheetClockRecords();
-      setDateRangeStr('07/09/2026 - 13/09/2026');
-      setExportMode('hybrid');
-      setSeedSuccessMsg('Simulated weekly punches loaded successfully across all staff!');
-      setTimeout(() => setSeedSuccessMsg(null), 4000);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   // Compute preview rows based on active exportMode
   const previewRows: StaffWeeklyTimesheetRow[] = useMemo(() => {
@@ -213,42 +196,6 @@ export const WeeklyTimesheetExportModal: React.FC<WeeklyTimesheetExportModalProp
           </button>
         </div>
 
-        {/* Punch Simulation & Status Bar */}
-        <div className="bg-indigo-900 text-white px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs border-b border-indigo-800">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-indigo-800 text-indigo-200 border border-indigo-700">
-              <Zap className="w-3 h-3 text-amber-400" />
-              {clockRecords.length} Clock Records in System
-            </span>
-            <span className="text-slate-300 hidden sm:inline text-[11px]">
-              Full week simulation covers Mon–Sun (07/09 - 13/09) with lunch &amp; dinner punches for all staff.
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {seedSuccessMsg && (
-              <span className="text-emerald-300 font-bold flex items-center gap-1 text-[11px] animate-in fade-in">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                {seedSuccessMsg}
-              </span>
-            )}
-            <button
-              type="button"
-              disabled={isSeeding}
-              onClick={handleSimulatePunches}
-              className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 font-bold rounded-lg shadow-xs flex items-center gap-1.5 transition-all text-xs cursor-pointer disabled:opacity-50"
-              title="Populate complete week of clock in and clock out punches"
-            >
-              {isSeeding ? (
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3.5 h-3.5" />
-              )}
-              <span>{isSeeding ? 'Populating...' : 'Generate / Sync Simulated Records'}</span>
-            </button>
-          </div>
-        </div>
-
         {/* Configuration Controls Bar */}
         <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           {/* Preset / Mode */}
@@ -383,13 +330,10 @@ export const WeeklyTimesheetExportModal: React.FC<WeeklyTimesheetExportModalProp
                 </thead>
                 <tbody className="bg-white">
                   {previewRows.map((row, rIdx) => {
-                    const shift1 = (day: DayOfWeek) => row.days[day]?.[0];
-                    const shift2 = (day: DayOfWeek) => row.days[day]?.[1];
-
                     return (
                       <React.Fragment key={rIdx}>
-                        {/* Sub-row 1: Shift 1 (e.g. Lunch) */}
-                        <tr className="border-b border-slate-300 h-6 sm:h-7">
+                        {/* Sub-row 1: Lunch Shift (Morning/Midday service) */}
+                        <tr className="border-b border-slate-300 h-6 sm:h-7 hover:bg-slate-50/50 transition-colors">
                           {/* Name occupies 2 rows */}
                           <td
                             rowSpan={2}
@@ -398,30 +342,30 @@ export const WeeklyTimesheetExportModal: React.FC<WeeklyTimesheetExportModalProp
                             {row.staffName}
                           </td>
                           {DAYS_OF_WEEK.map((day) => {
-                            const p1 = shift1(day);
+                            const { lunch } = resolveDayShifts(row.days[day]);
                             return (
                               <React.Fragment key={day}>
-                                <td className="p-0.5 text-center font-sans font-medium text-slate-900 border-r border-slate-400 text-[10px] sm:text-[11px] align-middle">
-                                  {p1?.start || ''}
+                                <td className="p-0.5 text-center font-mono font-semibold text-slate-900 border-r border-slate-400 text-[10px] sm:text-[11px] align-middle tracking-tight">
+                                  {lunch?.start || ''}
                                 </td>
-                                <td className="p-0.5 text-center font-sans font-medium text-slate-900 border-r border-slate-950 last:border-r-0 text-[10px] sm:text-[11px] align-middle">
-                                  {p1?.finish || ''}
+                                <td className="p-0.5 text-center font-mono font-semibold text-slate-900 border-r border-slate-950 last:border-r-0 text-[10px] sm:text-[11px] align-middle tracking-tight">
+                                  {lunch?.finish || ''}
                                 </td>
                               </React.Fragment>
                             );
                           })}
                         </tr>
-                        {/* Sub-row 2: Shift 2 (e.g. Dinner) */}
-                        <tr className="border-b border-slate-950 h-6 sm:h-7">
+                        {/* Sub-row 2: Dinner Shift (Evening service - max 1 per staff member) */}
+                        <tr className="border-b border-slate-950 h-6 sm:h-7 hover:bg-slate-50/50 transition-colors">
                           {DAYS_OF_WEEK.map((day) => {
-                            const p2 = shift2(day);
+                            const { dinner } = resolveDayShifts(row.days[day]);
                             return (
                               <React.Fragment key={day}>
-                                <td className="p-0.5 text-center font-sans font-medium text-slate-900 border-r border-slate-400 text-[10px] sm:text-[11px] align-middle">
-                                  {p2?.start || ''}
+                                <td className="p-0.5 text-center font-mono font-semibold text-slate-900 border-r border-slate-400 text-[10px] sm:text-[11px] align-middle tracking-tight">
+                                  {dinner?.start || ''}
                                 </td>
-                                <td className="p-0.5 text-center font-sans font-medium text-slate-900 border-r border-slate-950 last:border-r-0 text-[10px] sm:text-[11px] align-middle">
-                                  {p2?.finish || ''}
+                                <td className="p-0.5 text-center font-mono font-semibold text-slate-900 border-r border-slate-950 last:border-r-0 text-[10px] sm:text-[11px] align-middle tracking-tight">
+                                  {dinner?.finish || ''}
                                 </td>
                               </React.Fragment>
                             );

@@ -226,7 +226,7 @@ export const INITIAL_AVAILABILITIES: Record<string, StaffWeeklyAvailability> = {
 
 export const INITIAL_SHIFTS: ShiftSlot[] = [];
 
-export const INITIAL_CLOCK_RECORDS: ClockRecord[] = [];
+export { INITIAL_CLOCK_RECORDS } from './data/initialClockRecords';
 
 export const INITIAL_TASKS: TaskItem[] = [];
 

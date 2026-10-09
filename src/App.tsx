@@ -38,153 +38,38 @@ const MainContent: React.FC = () => {
     lockTerminal,
     addAuditLog,
   } = useApp();
-  const [showManagerPinModal, setShowManagerPinModal] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
-
-  // Terminal Lock / Traditional Sign-In State
+  // Terminal Sign-In State
   const [terminalUserId, setTerminalUserId] = useState('');
-  const [terminalPin, setTerminalPin] = useState('');
   const [terminalError, setTerminalError] = useState('');
-
-  // Manager-Authorized Override State (Strict Security: Staff cannot override PINs)
-  const [showManagerOverrideModal, setShowManagerOverrideModal] = useState(false);
-  const [overrideManagerPin, setOverrideManagerPin] = useState('');
-  const [overrideReason, setOverrideReason] = useState('Employee forgot personal PIN');
-  const [overrideError, setOverrideError] = useState('');
 
   // Strict RBAC: Staff users are strictly locked to staff views
   const effectiveRole = activeStaff.role === 'staff' ? 'staff' : currentRole;
-
-  const handleManagerLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPinError('');
-    if (authenticateManager(pinInput)) {
-      setShowManagerPinModal(false);
-      setPinInput('');
-    } else {
-      setPinError('Invalid Manager PIN. Access denied.');
-    }
-  };
 
   const handleTerminalUnlock = (e: React.FormEvent) => {
     e.preventDefault();
     setTerminalError('');
 
     if (!terminalUserId) {
-      setTerminalError('Please select your employee name to sign in.');
+      setTerminalError('Please choose an employee profile to sign in.');
       return;
     }
 
     const selectedUser = staffUsers.find((u) => u.id === terminalUserId);
     if (!selectedUser) return;
 
-    const cleanPin = terminalPin.trim();
-
-    // STRICT SECURITY RULE: Staff cannot PIN override!
-    if (selectedUser.role === 'staff') {
-      // If someone types 1234 or attempts an override on a staff profile, block it!
-      if (cleanPin === '1234' && selectedUser.pin !== '1234') {
-        setTerminalError(
-          'Access Denied: Staff are strictly prohibited from using PIN Override. You must enter your personal 4-digit PIN, or request a Manager to authorize an override.'
-        );
-
-        addAuditLog({
-          actionType: 'pin_override',
-          title: `Blocked PIN Override Attempt for ${selectedUser.firstName}`,
-          details: `Unauthorized PIN override attempt blocked. An attempt was made to enter master PIN (1234) on staff profile ${selectedUser.firstName} ${selectedUser.lastName}. Staff cannot perform PIN overrides.`,
-          actorName: `${selectedUser.firstName} (Staff Attempt - BLOCKED)`,
-          actorRole: 'staff',
-          severity: 'warning',
-          terminal: 'Sunnybank POS Terminal #1',
-          metadata: { targetUserId: selectedUser.id, blocked: true, reason: 'Staff cannot perform PIN override' },
-        });
-
-        return;
-      }
-
-      // Check against employee's personal PIN
-      if (selectedUser.pin !== cleanPin) {
-        setTerminalError(`Incorrect Security PIN for ${selectedUser.firstName}. Please enter your personal 4-digit PIN.`);
-        return;
-      }
-
-      // Successful staff login with personal PIN
-      addAuditLog({
-        actionType: 'pin_auth',
-        title: `Terminal Sign-In: ${selectedUser.firstName} ${selectedUser.lastName}`,
-        details: `${selectedUser.firstName} signed into POS terminal with verified personal 4-digit security PIN.`,
-        actorName: `${selectedUser.firstName} (${selectedUser.position})`,
-        actorRole: 'staff',
-        severity: 'info',
-        terminal: 'Sunnybank POS Terminal #1',
-      });
-
-      switchUser(terminalUserId);
-      setIsTerminalLocked(false);
-      setTerminalPin('');
-      setTerminalUserId('');
-      return;
-    }
-
-    // Manager profile authentication:
-    const manager = staffUsers.find((s) => s.role === 'manager');
-    const managerPin = manager?.pin || '1234';
-    const isManagerCorrect = cleanPin === managerPin || cleanPin === '1234';
-
-    if (!isManagerCorrect) {
-      setTerminalError('Incorrect Security PIN for Manager profile. Please enter your manager credentials.');
-      return;
-    }
-
-    authenticateManager(terminalPin);
-    setIsTerminalLocked(false);
-    setTerminalPin('');
-    setTerminalUserId('');
-  };
-
-  const handleManagerAuthorizeOverride = (e: React.FormEvent) => {
-    e.preventDefault();
-    setOverrideError('');
-
-    if (!terminalUserId) {
-      setOverrideError('No employee selected.');
-      return;
-    }
-
-    const selectedUser = staffUsers.find((u) => u.id === terminalUserId);
-    if (!selectedUser) return;
-
-    const manager = staffUsers.find((s) => s.role === 'manager');
-    const managerPin = manager?.pin || '1234';
-
-    if (overrideManagerPin.trim() !== managerPin && overrideManagerPin.trim() !== '1234') {
-      setOverrideError('Invalid Manager Security PIN. Authorization rejected.');
-      return;
-    }
-
-    // Manager authorized override succeeds!
+    // Successful login without PIN
     addAuditLog({
-      actionType: 'pin_override',
-      title: `Manager PIN Override Authorized for ${selectedUser.firstName}`,
-      details: `Manager Mark Zhang successfully authenticated with Manager PIN to authorize terminal sign-in for employee ${selectedUser.firstName} ${selectedUser.lastName} (${selectedUser.position}). Reason: "${overrideReason}".`,
-      actorName: 'Mark Zhang (Manager Override)',
-      actorRole: 'manager',
-      severity: 'warning',
+      actionType: 'login',
+      title: `Terminal Sign-In: ${selectedUser.firstName} ${selectedUser.lastName}`,
+      details: `${selectedUser.firstName} signed into workforce session (${selectedUser.position}).`,
+      actorName: `${selectedUser.firstName} (${selectedUser.position})`,
+      actorRole: selectedUser.role,
+      severity: 'info',
       terminal: 'Sunnybank POS Terminal #1',
-      metadata: {
-        authorizedBy: 'Mark Zhang (Manager)',
-        targetUserId: selectedUser.id,
-        targetStaffName: `${selectedUser.firstName} ${selectedUser.lastName}`,
-        reason: overrideReason,
-      },
     });
 
     switchUser(terminalUserId);
     setIsTerminalLocked(false);
-    setShowManagerOverrideModal(false);
-    setOverrideManagerPin('');
-    setTerminalPin('');
     setTerminalUserId('');
   };
 
@@ -274,55 +159,49 @@ const MainContent: React.FC = () => {
             {effectiveRole === 'staff' ? (
               <>
                 <button
-                  onClick={() => {
-                    setShowManagerPinModal(true);
-                    setPinInput('');
-                    setPinError('');
-                  }}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] transition-colors cursor-pointer"
+                  onClick={() => switchRole('manager')}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-[11px] transition-colors cursor-pointer"
+                  title="Switch to Manager Console"
                 >
-                  <KeyRound className="w-3 h-3 text-indigo-600" />
-                  <span className="hidden sm:inline">Manager</span> PIN
+                  <Shield className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Manager Console</span>
                 </button>
                 <button
                   onClick={() => {
                     setTerminalUserId(activeStaff.id);
-                    setTerminalPin('');
                     setTerminalError('');
                     setIsTerminalLocked(true);
                   }}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold text-[11px] transition-colors cursor-pointer"
-                  title="Sign out of current session"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] transition-colors cursor-pointer"
+                  title="Switch employee profile or sign out"
                 >
-                  <LogOut className="w-3 h-3 text-red-600" />
-                  <span>Sign Out</span>
+                  <LogOut className="w-3 h-3 text-slate-600" />
+                  <span>Switch User</span>
                 </button>
               </>
             ) : (
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full hidden sm:inline">
-                  Admin Authorized
+                  Manager Mode
                 </span>
-                {activeStaff.role === 'manager' && currentRole === 'staff' && (
-                  <button
-                    onClick={() => switchRole('manager')}
-                    className="text-[11px] font-bold text-indigo-600 hover:underline cursor-pointer"
-                  >
-                    Exit Preview
-                  </button>
-                )}
+                <button
+                  onClick={() => switchRole('staff')}
+                  className="text-[11px] font-bold text-slate-600 hover:text-indigo-600 hover:underline cursor-pointer px-1.5 py-0.5"
+                  title="Switch to Staff Mode"
+                >
+                  Staff Mode
+                </button>
                 <button
                   onClick={() => {
                     setTerminalUserId(activeStaff.id);
-                    setTerminalPin('');
                     setTerminalError('');
                     setIsTerminalLocked(true);
                   }}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] transition-colors cursor-pointer ml-1"
-                  title="Sign out of manager console"
+                  title="Switch user or sign out"
                 >
                   <LogOut className="w-3 h-3 text-slate-500" />
-                  <span>Sign Out</span>
+                  <span>Switch User</span>
                 </button>
               </div>
             )}
@@ -348,66 +227,7 @@ const MainContent: React.FC = () => {
         </footer>
       </div>
 
-      {/* Manager PIN Modal (Accessible from top bar) */}
-      {showManagerPinModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 text-left space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
-                <Lock className="w-4 h-4 text-indigo-600" />
-                Manager Authentication
-              </div>
-              <button
-                onClick={() => setShowManagerPinModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleManagerLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Manager Security PIN
-                </label>
-                <input
-                  type="password"
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
-                  maxLength={6}
-                  placeholder="••••"
-                  autoFocus
-                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-center text-lg font-mono tracking-widest focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {pinError && (
-                <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
-                  {pinError}
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowManagerPinModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs shadow-indigo-200"
-                >
-                  Unlock Manager View
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Workforce Terminal Sign-In Screen */}
+      {/* Workforce Terminal Sign-In Screen (Direct Profile Selection, No PIN Required) */}
       {isTerminalLocked && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
           <div className="bg-white rounded-3xl p-5 sm:p-8 max-w-md w-full max-h-[94vh] overflow-y-auto shadow-2xl border border-slate-200 text-left space-y-4 sm:space-y-5 animate-in fade-in zoom-in-95 duration-150">
@@ -417,10 +237,10 @@ const MainContent: React.FC = () => {
                 <User className="w-6 h-6" />
               </div>
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                Workforce Terminal Sign-In
+                Workforce Sign-In
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Sunnybank Market Square • Employee Authentication
+                Sunnybank Market Square • Choose Employee Profile
               </p>
             </div>
 
@@ -444,69 +264,27 @@ const MainContent: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider flex items-center justify-between">
-                  <span>4-Digit Security PIN</span>
-                  {terminalUserId && (
-                    <span className="text-[11px] font-normal text-indigo-600 font-sans">
-                      PIN configured for this employee
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="password"
-                  value={terminalPin}
-                  onChange={(e) => setTerminalPin(e.target.value)}
-                  maxLength={4}
-                  placeholder="••••"
-                  autoFocus
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-center text-xl font-mono tracking-widest focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white"
-                />
-                {terminalUserId && (
-                  <p className="text-[11px] text-slate-500 mt-1.5 text-center">
-                    Enter personal 4-digit security PIN
-                  </p>
-                )}
-              </div>
-
-              {/* Quick Keypad */}
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => {
-                      if (terminalPin.length < 4) setTerminalPin((p) => p + num);
-                    }}
-                    className="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-base transition-colors cursor-pointer"
-                  >
-                    {num}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setTerminalPin('')}
-                  className="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors cursor-pointer"
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (terminalPin.length < 4) setTerminalPin((p) => p + '0');
-                  }}
-                  className="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-base transition-colors cursor-pointer"
-                >
-                  0
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTerminalPin((p) => p.slice(0, -1))}
-                  className="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition-colors cursor-pointer"
-                >
-                  ⌫
-                </button>
-              </div>
+              {terminalUserId && (
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
+                  {(() => {
+                    const sel = staffUsers.find((u) => u.id === terminalUserId);
+                    if (!sel) return null;
+                    return (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-slate-900 text-sm">{sel.firstName} {sel.lastName}</div>
+                          <div className="text-slate-500 text-xs mt-0.5">{sel.position}</div>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          sel.role === 'manager' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-800'
+                        }`}>
+                          {sel.role === 'manager' ? 'Manager' : 'Staff'}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
 
               {terminalError && (
                 <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
@@ -527,92 +305,7 @@ const MainContent: React.FC = () => {
                   type="submit"
                   className="flex-1 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-200 transition-all cursor-pointer"
                 >
-                  Authenticate & Sign In
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Manager Authorized PIN Override Modal (Only Managers Can Authorize) */}
-      {showManagerOverrideModal && (
-        <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 text-left space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
-                <KeyRound className="w-4 h-4 text-amber-600" />
-                <span>Manager PIN Override</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowManagerOverrideModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
-              <div className="font-bold flex items-center gap-1">
-                <span>⚠️ Manager Verification Required</span>
-              </div>
-              <p className="text-[11px] leading-relaxed text-amber-800">
-                Staff cannot override PINs. A manager must enter their administrative credentials to authorize sign-in for <strong>{staffUsers.find((s) => s.id === terminalUserId)?.firstName}</strong>.
-              </p>
-            </div>
-
-            <form onSubmit={handleManagerAuthorizeOverride} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Manager Security PIN
-                </label>
-                <input
-                  type="password"
-                  value={overrideManagerPin}
-                  onChange={(e) => setOverrideManagerPin(e.target.value)}
-                  maxLength={4}
-                  placeholder="••••"
-                  autoFocus
-                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-center text-lg font-mono tracking-widest focus:outline-hidden focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Override Justification / Reason
-                </label>
-                <select
-                  value={overrideReason}
-                  onChange={(e) => setOverrideReason(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white text-slate-800"
-                >
-                  <option value="Employee forgot personal PIN">Employee forgot personal PIN</option>
-                  <option value="Emergency floor relief punch">Emergency floor relief punch</option>
-                  <option value="Supervisor terminal release">Supervisor terminal release</option>
-                  <option value="PIN locked by system">PIN locked by system</option>
-                </select>
-              </div>
-
-              {overrideError && (
-                <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
-                  {overrideError}
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowManagerOverrideModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs shadow-amber-200"
-                >
-                  Authorize Sign-In
+                  Sign In Directly
                 </button>
               </div>
             </form>

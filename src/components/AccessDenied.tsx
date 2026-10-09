@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '../context/AppContext';
-import { ShieldAlert, Lock, ArrowLeft, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ShieldAlert, Lock, ArrowLeft, ShieldCheck } from 'lucide-react';
 
 interface AccessDeniedProps {
   attemptedPage: string;
@@ -8,21 +8,10 @@ interface AccessDeniedProps {
 
 export const AccessDenied: React.FC<AccessDeniedProps> = ({ attemptedPage }) => {
   const { activeStaff, setCurrentPage, authenticateManager } = useApp();
-  const [showPinDialog, setShowPinDialog] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
 
-  const handlePinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPinError('');
-    const ok = authenticateManager(pinInput);
-    if (ok) {
-      setShowPinDialog(false);
-      setPinInput('');
-      setCurrentPage(attemptedPage);
-    } else {
-      setPinError('Invalid Manager PIN. Operational access remains restricted.');
-    }
+  const handleUnlockManager = () => {
+    authenticateManager();
+    setCurrentPage(attemptedPage);
   };
 
   return (
@@ -69,85 +58,21 @@ export const AccessDenied: React.FC<AccessDeniedProps> = ({ attemptedPage }) => 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <button
             onClick={() => setCurrentPage('My Schedule')}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm shadow-indigo-200 cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             Go to My Personal Schedule
           </button>
 
           <button
-            onClick={() => {
-              setShowPinDialog(true);
-              setPinInput('');
-              setPinError('');
-            }}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            onClick={handleUnlockManager}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm shadow-indigo-200 cursor-pointer"
           >
-            <KeyRound className="w-4 h-4 text-indigo-600" />
-            Unlock with Manager PIN
+            <ShieldCheck className="w-4 h-4 text-white" />
+            Switch to Manager Console
           </button>
         </div>
       </div>
-
-      {/* PIN Dialog Modal */}
-      {showPinDialog && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 text-left">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
-                <Lock className="w-4 h-4 text-indigo-600" />
-                Manager PIN Verification
-              </div>
-              <button
-                onClick={() => setShowPinDialog(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handlePinSubmit} className="space-y-4 pt-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Enter Manager PIN
-                </label>
-                <input
-                  type="password"
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
-                  maxLength={6}
-                  placeholder="••••"
-                  autoFocus
-                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-center text-lg font-mono tracking-widest focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {pinError && (
-                <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{pinError}</span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPinDialog(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-xs shadow-indigo-200 cursor-pointer"
-                >
-                  Verify & Proceed
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
