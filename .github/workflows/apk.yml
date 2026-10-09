@@ -23,4 +23,4 @@ jobs:
       uses: sangatdesai/release-apk@main
       env:
        GITHUB_TOKEN: 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
-       APP_FOLDER: app
+       APP_FOLDER: public
