@@ -28,7 +28,6 @@ export const ManagerHome: React.FC = () => {
     onboardingRecords,
     setCurrentPage,
     switchUser,
-    cyclePhase,
     isScheduleSent,
     auditLogs,
   } = useApp();
@@ -80,47 +79,6 @@ export const ManagerHome: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Weekly Roster Protocol Status Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl text-white ${
-            cyclePhase === 'OPEN' ? 'bg-emerald-600' :
-            cyclePhase === 'LOCKED' ? 'bg-amber-600' :
-            cyclePhase === 'SCHEDULE_SENT' ? 'bg-indigo-600' : 'bg-purple-600'
-          }`}>
-            <Calendar className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="font-bold text-slate-900 flex items-center gap-2">
-              <span>Weekly Roster Timeline Protocol:</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                cyclePhase === 'OPEN' ? 'bg-emerald-100 text-emerald-900' :
-                cyclePhase === 'LOCKED' ? 'bg-amber-100 text-amber-900' :
-                cyclePhase === 'SCHEDULE_SENT' ? 'bg-indigo-100 text-indigo-900' : 'bg-purple-100 text-purple-900'
-              }`}>
-                {cyclePhase === 'OPEN' ? 'Submissions Open (till Sun 14:30)' :
-                 cyclePhase === 'LOCKED' ? 'Timetable Locked (Manager Scheduling)' :
-                 cyclePhase === 'SCHEDULE_SENT' ? 'Schedule Sent Out' : 'Sunday 22:00 Close'}
-              </span>
-            </div>
-            <div className="text-slate-500 mt-0.5">
-              {cyclePhase === 'OPEN' && 'Staff can submit availabilities until Sunday 14:30.'}
-              {cyclePhase === 'LOCKED' && 'Timetable is locked. Schedule shifts and send out to staff.'}
-              {cyclePhase === 'SCHEDULE_SENT' && 'Schedule published. Staff can view their shifts in My Weekly Schedule.'}
-              {cyclePhase === 'CLOSED_EXPORTED' && 'Sunday 22:00 weekly trade closed. Timesheet exported and timetable reset.'}
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setCurrentPage('Weekly Schedule')}
-          className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl border border-indigo-200 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-        >
-          <span>Open Schedule Planner</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
       </div>
 
       {/* KPI Overview Grid */}

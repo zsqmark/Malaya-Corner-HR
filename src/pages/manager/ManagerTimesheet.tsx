@@ -252,9 +252,6 @@ export const ManagerTimesheet: React.FC = () => {
                 Excel .xlsx
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
-              Modeled directly after the Malaya Corner weekly roster sheet: 7-day columns (MON–SUN), separate Start &amp; Finish punches per day, split shift lines, and clean bordered print layout.
-            </p>
           </div>
         </div>
 

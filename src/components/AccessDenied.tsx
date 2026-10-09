@@ -109,7 +109,7 @@ export const AccessDenied: React.FC<AccessDeniedProps> = ({ attemptedPage }) => 
             <form onSubmit={handlePinSubmit} className="space-y-4 pt-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Enter Manager PIN (Demo: 1234)
+                  Enter Manager PIN
                 </label>
                 <input
                   type="password"

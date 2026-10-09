@@ -232,10 +232,10 @@ export const Sidebar: React.FC = () => {
         <button
           onClick={resetToDefaults}
           className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer font-medium"
-          title="Reset application to original sample data"
+          title="Reset and clear all application data"
         >
           <RotateCcw className="w-3 h-3 text-slate-400" />
-          Reset Demo Data
+          Clear / Reset All Data
         </button>
       </div>
     </div>

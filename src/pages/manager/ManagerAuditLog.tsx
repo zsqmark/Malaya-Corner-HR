@@ -22,6 +22,7 @@ import {
   ExternalLink,
   ShieldCheck,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 
 export const ManagerAuditLog: React.FC = () => {
@@ -235,12 +236,12 @@ export const ManagerAuditLog: React.FC = () => {
 
           <button
             type="button"
-            onClick={resetAuditLogsToDefaults}
+            onClick={clearAuditLogs}
             className="flex-1 sm:flex-none px-3.5 py-2.5 bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            title="Reset audit trail to initial demo records"
+            title="Clear all recorded audit trail events"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-            <span>Reset Demo Logs</span>
+            <Trash2 className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+            <span>Clear Audit Log</span>
           </button>
         </div>
       </div>

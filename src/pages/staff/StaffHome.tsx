@@ -7,20 +7,13 @@ import {
   FileText,
   Wine,
   Utensils,
-  Calendar,
-  ClipboardList,
-  CheckSquare,
-  ArrowRight,
 } from 'lucide-react';
 
 export const StaffHome: React.FC = () => {
   const {
     activeStaff,
     clockRecords,
-    shifts,
-    tasks,
     setCurrentPage,
-    clockIn,
     clockOut,
   } = useApp();
 
@@ -28,9 +21,6 @@ export const StaffHome: React.FC = () => {
   const activeRecord = clockRecords.find(
     (r) => r.staffId === activeStaff.id && r.status === 'clocked_in'
   );
-
-  const myShifts = shifts.filter((s) => s.assignedStaffId === activeStaff.id);
-  const myPendingTasks = tasks.filter((t) => !t.isCompleted && (!t.assignedStaffId || t.assignedStaffId === activeStaff.id));
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -98,57 +88,6 @@ export const StaffHome: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Mobile Quick Action Dashboard Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <button
-          onClick={() => setCurrentPage('My Schedule')}
-          className="p-3.5 sm:p-4 bg-white rounded-xl border border-slate-200 text-left hover:border-indigo-300 hover:shadow-xs transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <Calendar className="w-5 h-5 text-indigo-600" />
-            <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600" />
-          </div>
-          <div className="text-sm font-bold text-slate-900">My Schedule</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">{myShifts.length} shifts scheduled</div>
-        </button>
-
-        <button
-          onClick={() => setCurrentPage('Daily Checklist')}
-          className="p-3.5 sm:p-4 bg-white rounded-xl border border-slate-200 text-left hover:border-indigo-300 hover:shadow-xs transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <ClipboardList className="w-5 h-5 text-indigo-600" />
-            <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600" />
-          </div>
-          <div className="text-sm font-bold text-slate-900">Station Checklist</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Opening, safety & closing</div>
-        </button>
-
-        <button
-          onClick={() => setCurrentPage('My Availability')}
-          className="p-3.5 sm:p-4 bg-white rounded-xl border border-slate-200 text-left hover:border-indigo-300 hover:shadow-xs transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <Clock className="w-5 h-5 text-indigo-600" />
-            <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600" />
-          </div>
-          <div className="text-sm font-bold text-slate-900">My Availability</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Weekly shift requests</div>
-        </button>
-
-        <button
-          onClick={() => setCurrentPage('My Task')}
-          className="p-3.5 sm:p-4 bg-white rounded-xl border border-slate-200 text-left hover:border-indigo-300 hover:shadow-xs transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <CheckSquare className="w-5 h-5 text-indigo-600" />
-            <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600" />
-          </div>
-          <div className="text-sm font-bold text-slate-900">Shift Tasks</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">{myPendingTasks.length} pending duties</div>
-        </button>
       </div>
 
       {/* Onboarding Notice if Incomplete */}

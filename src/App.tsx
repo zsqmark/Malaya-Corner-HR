@@ -368,7 +368,7 @@ const MainContent: React.FC = () => {
             <form onSubmit={handleManagerLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Manager Security PIN (Demo: 1234)
+                  Manager Security PIN
                 </label>
                 <input
                   type="password"
@@ -464,7 +464,7 @@ const MainContent: React.FC = () => {
                 />
                 {terminalUserId && (
                   <p className="text-[11px] text-slate-500 mt-1.5 text-center">
-                    Security PIN (Demo: <strong className="text-indigo-600 font-mono">{staffUsers.find((s) => s.id === terminalUserId)?.pin || '1234'}</strong>)
+                    Enter personal 4-digit security PIN
                   </p>
                 )}
               </div>
@@ -514,31 +514,6 @@ const MainContent: React.FC = () => {
                   <span>{terminalError}</span>
                 </div>
               )}
-
-              {/* Security Policy Badge */}
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
-                <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-700">
-                  <Shield className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Strict Security: Staff Cannot PIN Override</span>
-                </div>
-                <p className="text-[10px] text-slate-500">
-                  Staff must enter their personal 4-digit PIN. If forgotten, only a manager can authorize an override.
-                </p>
-                {terminalUserId && staffUsers.find((s) => s.id === terminalUserId)?.role === 'staff' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowManagerOverrideModal(true);
-                      setOverrideError('');
-                      setOverrideManagerPin('');
-                    }}
-                    className="mt-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <KeyRound className="w-3 h-3" />
-                    <span>Manager Override Authorization</span>
-                  </button>
-                )}
-              </div>
 
               <div className="flex items-center justify-between gap-3 pt-2">
                 <button
@@ -590,7 +565,7 @@ const MainContent: React.FC = () => {
             <form onSubmit={handleManagerAuthorizeOverride} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Manager Security PIN (Demo: 1234)
+                  Manager Security PIN
                 </label>
                 <input
                   type="password"

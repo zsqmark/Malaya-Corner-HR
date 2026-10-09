@@ -83,7 +83,7 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
               <button
                 onClick={() => switchUser('staff-john')}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors text-xs"
-                title="Switch to an already onboarded staff member for demo"
+                title="Preview as onboarded staff member (John Tan)"
               >
                 <UserCheck className="w-4 h-4 text-emerald-600" />
                 Preview as Onboarded Staff (John Tan)

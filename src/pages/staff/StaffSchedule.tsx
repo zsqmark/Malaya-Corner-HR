@@ -9,9 +9,6 @@ import {
   Moon,
   ArrowRight,
   ShieldCheck,
-  CheckCircle2,
-  Lock,
-  Sparkles,
 } from 'lucide-react';
 
 const DAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
@@ -21,11 +18,6 @@ export const StaffSchedule: React.FC = () => {
     shifts,
     activeStaff,
     setCurrentPage,
-    cyclePhase,
-    isScheduleSent,
-    lastScheduleSentAt,
-    currentWeekLabel,
-    nextWeekLabel,
   } = useApp();
   const [mobileDayFilter, setMobileDayFilter] = useState<DayOfWeek | 'ALL'>('ALL');
 
@@ -77,87 +69,16 @@ export const StaffSchedule: React.FC = () => {
         </div>
       </div>
 
-      {/* Roster Lifecycle Alert */}
-      {isScheduleSent ? (
-        <div className="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl flex items-center justify-between gap-3 text-xs text-emerald-950 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-xs shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-bold text-sm text-emerald-950 flex items-center gap-2">
-                <span>Official Weekly Schedule Sent Out</span>
-                <span className="text-[10px] bg-emerald-200 text-emerald-900 font-bold px-2 py-0.5 rounded-full border border-emerald-400">
-                  Confirmed
-                </span>
-              </div>
-              <div className="text-emerald-800 mt-0.5 leading-relaxed">
-                Manager Mark has completed and sent out the schedule. All your assigned lunch and dinner shifts for the upcoming week are confirmed below.
-                {lastScheduleSentAt && <span className="font-semibold ml-1">Sent on: {lastScheduleSentAt}</span>}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : cyclePhase === 'LOCKED' ? (
-        <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center gap-3 text-xs text-amber-950 shadow-xs">
-          <div className="p-2.5 bg-amber-600 text-white rounded-xl shadow-xs shrink-0">
-            <Lock className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="font-bold text-sm text-amber-950 flex items-center gap-2">
-              <span>Next Week's Schedule In Preparation</span>
-              <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full border border-amber-400">
-                Planning Stage
-              </span>
-            </div>
-            <div className="text-amber-800 mt-0.5 leading-relaxed">
-              Availability submissions closed at <strong>Sunday 14:30</strong>. Manager Mark is currently assigning shifts. As soon as the manager sends out the final schedule, your new shifts will appear here.
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       {/* Shift Timing Information */}
       <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2.5">
           <Clock className="w-4 h-4 text-indigo-600" />
           <span className="font-semibold text-slate-700">Roster Service Windows:</span>
-          <span className="text-slate-500">Scheduled start times adhere to restaurant service windows:</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg font-medium text-[11px] flex items-center gap-1">
-            <Sun className="w-3 h-3 text-amber-600" /> Lunch: 11:00am – 2:30pm
-          </span>
-          <span className="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg font-medium text-[11px] flex items-center gap-1">
-            <Moon className="w-3 h-3 text-indigo-600" /> Dinner: 4:30pm – 10:00pm
-          </span>
+          <span className="text-slate-500">Scheduled start times adhere to restaurant service windows (flexible finish times based on trade).</span>
         </div>
       </div>
 
-      {/* Schedule State: If locked and not yet sent, show preparation screen */}
-      {cyclePhase === 'LOCKED' && !isScheduleSent ? (
-        <div className="bg-white rounded-2xl border-2 border-amber-300 p-8 text-center shadow-xs space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-inner">
-            <Lock className="w-7 h-7" />
-          </div>
-          <div className="max-w-md mx-auto space-y-2">
-            <h2 className="text-xl font-bold text-slate-900">
-              Next Week Schedule Under Preparation
-            </h2>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Availability submissions locked at <strong>Sunday 14:30</strong>. Manager Mark is currently scheduling and finalizing all shifts for next week.
-            </p>
-            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 font-medium text-left flex items-start gap-2">
-              <span className="text-base">📅</span>
-              <div>
-                <strong>Schedule Release Protocol:</strong> On Sunday, after all shifts for next week have been scheduled by the manager, the roster will be sent out so all staff have the ability to view their own schedule.
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Summary KPI Pills */}
+      {/* Summary KPI Pills */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-xs">
               <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase">My Shifts</div>
@@ -296,8 +217,6 @@ export const StaffSchedule: React.FC = () => {
           })}
         </div>
       </div>
-      </>
-      )}
     </div>
   );
 };

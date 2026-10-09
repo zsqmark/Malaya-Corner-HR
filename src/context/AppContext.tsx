@@ -133,6 +133,7 @@ interface AppContextType {
     welcomeNote?: string;
   }) => { staffId: string; inviteToken: string };
   deleteStaffUser: (staffId: string) => void;
+  clearAllStaffUsers: () => void;
   // Documents
   uploadDocument: (doc: Omit<RestaurantDocument, 'id' | 'uploadedAt'>) => void;
   deleteDocument: (docId: string) => void;
@@ -159,6 +160,19 @@ const STORAGE_KEYS = {
   LAST_SENT_AT: 'malaya_7shifts_last_sent_v1',
   LAST_EXPORT_AT: 'malaya_7shifts_last_export_v1',
 };
+
+// Purge previous demo data from browser storage so the system starts completely clean
+if (typeof window !== 'undefined' && localStorage.getItem('malaya_demo_purged_v5') !== 'true') {
+  localStorage.removeItem(STORAGE_KEYS.SHIFTS);
+  localStorage.removeItem(STORAGE_KEYS.CLOCK_RECORDS);
+  localStorage.removeItem(STORAGE_KEYS.AVAILABILITIES);
+  localStorage.removeItem(STORAGE_KEYS.TASKS);
+  localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
+  localStorage.removeItem(STORAGE_KEYS.ONBOARDING);
+  localStorage.removeItem('malaya_7shifts_checklists_v2');
+  localStorage.removeItem('malaya_7shifts_checklists_v3');
+  localStorage.setItem('malaya_demo_purged_v5', 'true');
+}
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRole, setCurrentRole] = useState<Role>(() => {
@@ -193,7 +207,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [shifts, setShifts] = useState<ShiftSlot[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SHIFTS);
-    return saved ? JSON.parse(saved) : INITIAL_SHIFTS;
+    const rawShifts: ShiftSlot[] = saved ? JSON.parse(saved) : INITIAL_SHIFTS;
+
+    const savedAvail = localStorage.getItem(STORAGE_KEYS.AVAILABILITIES);
+    const availMap: Record<string, StaffWeeklyAvailability> = savedAvail
+      ? JSON.parse(savedAvail)
+      : INITIAL_AVAILABILITIES;
+
+    // Enforce business rule:
+    // When the staff has not yet submitted their availability for that slot, the slot should be empty (unassigned).
+    return rawShifts.map((s) => {
+      if (!s.assignedStaffId) return s;
+      const staffAvail = availMap[s.assignedStaffId];
+      const isAvailable = Boolean(staffAvail?.availabilities?.[s.day]?.[s.shiftType]);
+      if (!isAvailable) {
+        return { ...s, assignedStaffId: undefined };
+      }
+      return s;
+    });
   });
 
   const [availabilities, setAvailabilities] = useState<Record<string, StaffWeeklyAvailability>>(() => {
@@ -450,6 +481,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let isSubscribed = true;
 
     try {
+      // One-time purge of previously seeded demo collections from Firestore
+      if (typeof window !== 'undefined' && localStorage.getItem('malaya_fs_purged_v5') !== 'true') {
+        localStorage.setItem('malaya_fs_purged_v5', 'true');
+        ['shifts', 'clockRecords', 'tasks', 'auditLogs'].forEach(async (coll) => {
+          try {
+            const snap = await getDocs(collection(db, coll));
+            snap.forEach((d) => {
+              deleteDoc(doc(db, coll, d.id)).catch(() => {});
+            });
+          } catch {
+            // offline or silent
+          }
+        });
+      }
+
       // 1. Staff Users
       const unsubStaff = onSnapshot(
         collection(db, 'staffUsers'),
@@ -482,11 +528,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const remoteShifts = snapshot.docs.map((d) => d.data() as ShiftSlot);
             setShifts(remoteShifts);
           } else {
-            INITIAL_SHIFTS.forEach((shift) => {
-              setDoc(doc(db, 'shifts', shift.id), shift).catch((err) =>
-                handleFirestoreError(err, OperationType.WRITE, `shifts/${shift.id}`)
-              );
-            });
+            setShifts([]);
           }
         },
         (error) => {
@@ -501,24 +543,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (!isSubscribed) return;
           if (!snapshot.empty) {
             const remoteClock = snapshot.docs.map((d) => d.data() as ClockRecord);
-            // If remote collection has fewer records than full weekly dataset, seed the full dataset to Firestore
-            if (remoteClock.length < 15) {
-              INITIAL_CLOCK_RECORDS.forEach((rec) => {
-                setDoc(doc(db, 'clockRecords', rec.id), rec).catch((err) =>
-                  handleFirestoreError(err, OperationType.WRITE, `clockRecords/${rec.id}`)
-                );
-              });
-              setClockRecords(INITIAL_CLOCK_RECORDS);
-            } else {
-              setClockRecords(remoteClock);
-            }
+            setClockRecords(remoteClock);
           } else {
-            INITIAL_CLOCK_RECORDS.forEach((rec) => {
-              setDoc(doc(db, 'clockRecords', rec.id), rec).catch((err) =>
-                handleFirestoreError(err, OperationType.WRITE, `clockRecords/${rec.id}`)
-              );
-            });
-            setClockRecords(INITIAL_CLOCK_RECORDS);
+            setClockRecords([]);
           }
         },
         (error) => {
@@ -535,11 +562,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const remoteTasks = snapshot.docs.map((d) => d.data() as TaskItem);
             setTasks(remoteTasks);
           } else {
-            INITIAL_TASKS.forEach((t) => {
-              setDoc(doc(db, 'tasks', t.id), t).catch((err) =>
-                handleFirestoreError(err, OperationType.WRITE, `tasks/${t.id}`)
-              );
-            });
+            setTasks([]);
           }
         },
         (error) => {
@@ -599,11 +622,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             remoteAudit.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
             setAuditLogs(remoteAudit);
           } else {
-            INITIAL_AUDIT_LOGS.forEach((log) => {
-              setDoc(doc(db, 'auditLogs', log.id), log).catch((err) =>
-                handleFirestoreError(err, OperationType.WRITE, `auditLogs/${log.id}`)
-              );
-            });
+            setAuditLogs([]);
           }
         },
         (error) => {
@@ -626,7 +645,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
-  const activeStaff: StaffUser = staffUsers.find((s) => s.id === currentStaffId) || staffUsers[1];
+  const activeStaff: StaffUser =
+    staffUsers.find((s) => s.id === currentStaffId) ||
+    staffUsers[0] ||
+    INITIAL_STAFF_USERS[0];
 
   // Strict RBAC Enforcement: Staff users can never have currentRole set to 'manager'
   useEffect(() => {
@@ -1223,9 +1245,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const seedWeeklyTimesheetClockRecords = async () => {
-    setClockRecords(INITIAL_CLOCK_RECORDS);
+    const simulated: ClockRecord[] = [];
+    const days: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const activeStaffMembers = staffUsers.filter((s) => s.role === 'staff');
+    let counter = 1;
+    days.forEach((day, dayIndex) => {
+      const dateStr = `2026-09-${String(7 + dayIndex).padStart(2, '0')}`;
+      activeStaffMembers.slice(0, 5).forEach((staff) => {
+        simulated.push({
+          id: `sim-rec-${counter++}`,
+          staffId: staff.id,
+          staffName: `${staff.firstName} ${staff.lastName}`,
+          position: staff.position,
+          date: dateStr,
+          shiftType: 'lunch',
+          clockInTime: '11:15',
+          clockOutTime: '15:00',
+          breakMinutes: 15,
+          totalHours: 3.5,
+          status: 'completed',
+          hourlyRate: staff.hourlyRate,
+        });
+      });
+    });
+    setClockRecords(simulated);
     try {
-      for (const rec of INITIAL_CLOCK_RECORDS) {
+      for (const rec of simulated) {
         await setDoc(doc(db, 'clockRecords', rec.id), rec).catch((err) =>
           handleFirestoreError(err, OperationType.WRITE, `clockRecords/${rec.id}`)
         );
@@ -1233,14 +1278,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addAuditLog({
         actionType: 'schedule_update',
         title: 'Weekly Timesheet Punches Generated',
-        details: `Generated ${INITIAL_CLOCK_RECORDS.length} complete clock in and clock out records for all staff across Monday to Sunday (07/09/2026 - 13/09/2026) for timesheet simulation.`,
-        actorName: 'Mark Zhang (Manager)',
+        details: `Simulated ${simulated.length} complete clock in and clock out records for current staff across Monday to Sunday for timesheet preview & export.`,
+        actorName: `${activeStaff.firstName} ${activeStaff.lastName}`,
         actorRole: 'manager',
         severity: 'info',
         terminal: 'Manager Timesheet Console',
       });
     } catch (err) {
-      console.error('Failed to seed clock records:', err);
+      console.error('Failed to simulate clock records:', err);
     }
   };
 
@@ -1410,7 +1455,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteStaffUser = (staffId: string) => {
-    setStaffUsers((prev) => prev.filter((u) => u.id !== staffId));
+    setStaffUsers((prev) => {
+      const remaining = prev.filter((u) => u.id !== staffId);
+      if (currentStaffId === staffId) {
+        const nextId = remaining[0]?.id || 'staff-mark';
+        setCurrentStaffId(nextId);
+      }
+      return remaining;
+    });
+  };
+
+  const clearAllStaffUsers = () => {
+    setStaffUsers((prev) => prev.filter((u) => u.role === 'manager'));
+    setCurrentStaffId('staff-mark');
+    setCurrentRole('manager');
   };
 
   const submitOnboardingForm = (staffId: string, data: OnboardingFormData) => {
@@ -1543,21 +1601,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetToDefaults = () => {
     localStorage.clear();
+    localStorage.setItem('malaya_demo_purged_v5', 'true');
+    localStorage.setItem('malaya_fs_purged_v5', 'true');
     setStaffUsers(INITIAL_STAFF_USERS);
-    setShifts(INITIAL_SHIFTS);
-    setAvailabilities(INITIAL_AVAILABILITIES);
-    setClockRecords(INITIAL_CLOCK_RECORDS);
-    setTasks(INITIAL_TASKS);
+    setShifts([]);
+    setAvailabilities({});
+    setClockRecords([]);
+    setTasks([]);
     setChecklists(INITIAL_CHECKLISTS);
     setDocuments(INITIAL_DOCUMENTS);
-    setOnboardingRecords(INITIAL_ONBOARDING_DATA);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
+    setOnboardingRecords({});
+    setAuditLogs([]);
     setCyclePhase('OPEN');
     setIsScheduleSent(false);
     setLastScheduleSentAt(null);
     setLastTimesheetExportedAt(null);
     setCurrentRole('staff');
-    setCurrentStaffId('staff-john');
+    setCurrentStaffId(INITIAL_STAFF_USERS[1]?.id || INITIAL_STAFF_USERS[0]?.id || 'staff-mark');
     setCurrentPage('Homepage');
   };
 
@@ -1631,6 +1691,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         authenticateStaffPin,
         inviteStaffUser,
         deleteStaffUser,
+        clearAllStaffUsers,
         uploadDocument,
         deleteDocument,
         resetToDefaults,

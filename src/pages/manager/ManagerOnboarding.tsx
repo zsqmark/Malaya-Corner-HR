@@ -40,6 +40,7 @@ export const ManagerOnboarding: React.FC = () => {
     updateStaffPin,
     inviteStaffUser,
     deleteStaffUser,
+    clearAllStaffUsers,
     switchUser,
     switchRole,
     setCurrentPage,
@@ -234,7 +235,21 @@ export const ManagerOnboarding: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {staffUsers.some((s) => s.role === 'staff') && (
+            <button
+              onClick={() => {
+                if (window.confirm('Delete all staff members? This will remove all staff accounts and leave only the Manager account.')) {
+                  clearAllStaffUsers();
+                }
+              }}
+              className="px-3.5 py-2.5 bg-slate-100 hover:bg-red-50 hover:text-red-700 text-slate-600 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 border border-slate-200 cursor-pointer"
+              title="Remove all staff members and keep only the manager"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear All Staff</span>
+            </button>
+          )}
           <button
             onClick={() => setShowInviteModal(true)}
             className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-2 shadow-xs shadow-indigo-200 cursor-pointer"
@@ -498,6 +513,20 @@ export const ManagerOnboarding: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {staff.role !== 'manager' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Delete staff member ${staff.firstName} ${staff.lastName}?`)) {
+                            deleteStaffUser(staff.id);
+                          }
+                        }}
+                        className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs cursor-pointer"
+                        title="Delete staff account"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleOpenPinEditor(staff)}
@@ -649,11 +678,15 @@ export const ManagerOnboarding: React.FC = () => {
                             <LogIn className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        {staff.id.startsWith('staff-') && !hasDossier && (
+                        {staff.role !== 'manager' && (
                           <button
-                            onClick={() => deleteStaffUser(staff.id)}
+                            onClick={() => {
+                              if (window.confirm(`Delete staff member ${staff.firstName} ${staff.lastName}?`)) {
+                                deleteStaffUser(staff.id);
+                              }
+                            }}
                             className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                            title="Cancel / Delete Invitation"
+                            title="Delete staff account"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

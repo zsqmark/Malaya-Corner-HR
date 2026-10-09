@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { DayOfWeek, ShiftType, ShiftSlot } from '../../types';
+import { DayOfWeek, ShiftType, ShiftSlot, StaffUser } from '../../types';
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -108,6 +108,34 @@ export const ManagerSchedule: React.FC = () => {
   const [editRoleRequired, setEditRoleRequired] = useState<string>('Wait Staff');
   const [editNotes, setEditNotes] = useState<string>('');
   const [copyToDays, setCopyToDays] = useState<DayOfWeek[]>([]);
+
+  // Modal staff view / filter by role state
+  const [modalRoleFilter, setModalRoleFilter] = useState<'all' | 'wait_staff' | 'bar_staff' | 'kitchen' | 'manager'>('all');
+
+  // Quick helper to categorize and group staff by role
+  const getStaffByRoles = (list: StaffUser[], filter: string = 'all') => {
+    const isBar = (s: StaffUser) => s.staffType === 'bar_staff' || s.position?.toLowerCase().includes('bar');
+    const isKitchen = (s: StaffUser) =>
+      s.position?.toLowerCase().includes('kitchen') ||
+      s.position?.toLowerCase().includes('runner') ||
+      s.position?.toLowerCase().includes('cook') ||
+      s.position?.toLowerCase().includes('chef');
+    const isManager = (s: StaffUser) =>
+      s.role === 'manager' || s.position?.toLowerCase().includes('manager') || s.position?.toLowerCase().includes('supervisor');
+    const isWait = (s: StaffUser) => !isBar(s) && !isKitchen(s) && !isManager(s);
+
+    if (filter === 'bar_staff') return [{ label: '🍸 Bar Staff', items: list.filter(isBar) }];
+    if (filter === 'wait_staff') return [{ label: '🍽️ Wait Staff / Floor Staff', items: list.filter(isWait) }];
+    if (filter === 'kitchen') return [{ label: '👨‍🍳 Kitchen Staff & Runners', items: list.filter(isKitchen) }];
+    if (filter === 'manager') return [{ label: '📋 Management & Supervisors', items: list.filter(isManager) }];
+
+    return [
+      { label: '🍽️ Wait Staff / Floor Staff', items: list.filter(isWait) },
+      { label: '🍸 Bar Staff', items: list.filter(isBar) },
+      { label: '👨‍🍳 Kitchen Staff & Runners', items: list.filter(isKitchen) },
+      { label: '📋 Management & Supervisors', items: list.filter(isManager) },
+    ].filter((group) => group.items.length > 0);
+  };
 
   // Quick helper to check if a staff is available on day & shift
   const checkStaffAvailable = (staffId: string, day: DayOfWeek, shiftType: ShiftType): boolean => {
@@ -457,31 +485,6 @@ export const ManagerSchedule: React.FC = () => {
         </div>
       </div>
 
-      {/* Unrestricted Schedule Notice Banner */}
-      <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-emerald-50 border border-indigo-200/80 p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs shrink-0">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="font-bold text-slate-900 flex items-center gap-2">
-              <span>Unrestricted Schedule Editing Active</span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase">
-                No Limits
-              </span>
-            </div>
-            <p className="text-slate-600 text-[11px] leading-relaxed mt-0.5">
-              Managers can edit, add, or move shifts at any time. Set custom start and finish times with no window restrictions, or click any cell in the table below to schedule staff directly.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-          <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg font-mono text-[11px] text-slate-700 font-bold shadow-2xs">
-            {shifts.length} Total Shifts Scheduled
-          </span>
-        </div>
-      </div>
-
       {/* Roster & Availability Lifecycle Control Center */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         {/* Step-by-step lifecycle banner */}
@@ -637,146 +640,6 @@ export const ManagerSchedule: React.FC = () => {
             <span>Swipe for all 4 stages</span>
             <span className="text-indigo-300">→</span>
           </div>
-        </div>
-
-        {/* Manager Simulator Bar: 2x2 grid on mobile, flex on desktop */}
-        <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-bold text-slate-700 flex items-center gap-1.5">
-              <span>⏱️</span> Weekly Cycle Simulator:
-            </span>
-            <span className="text-[10px] text-slate-400 sm:hidden">
-              Tap to test
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-1.5 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => {
-                setCyclePhaseManual('OPEN');
-                setActionFeedback('Simulator: Switched to Stage 1: Submissions Open till Sunday 14:30.');
-                setTimeout(() => setActionFeedback(null), 5000);
-              }}
-              className={`py-2 px-2.5 rounded-lg text-xs font-medium text-center justify-center transition-all active:scale-95 cursor-pointer ${
-                cyclePhase === 'OPEN'
-                  ? 'bg-emerald-600 text-white font-bold shadow-xs'
-                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              1. Open Submissions
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setCyclePhaseManual('LOCKED');
-                setActionFeedback('Simulator: Switched to Stage 2: Sunday 14:30 Lock Active. Submissions disabled.');
-                setTimeout(() => setActionFeedback(null), 5000);
-              }}
-              className={`py-2 px-2.5 rounded-lg text-xs font-medium text-center justify-center transition-all active:scale-95 cursor-pointer ${
-                cyclePhase === 'LOCKED'
-                  ? 'bg-amber-600 text-white font-bold shadow-xs'
-                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              2. Lock Timetable (Sun 14:30)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setCyclePhaseManual('SCHEDULE_SENT');
-                setActionFeedback('Simulator: Switched to Stage 3: Schedule Sent Out to Staff & Timetable Reset.');
-                setTimeout(() => setActionFeedback(null), 5000);
-              }}
-              className={`py-2 px-2.5 rounded-lg text-xs font-medium text-center justify-center transition-all active:scale-95 cursor-pointer ${
-                cyclePhase === 'SCHEDULE_SENT'
-                  ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              3. Send Schedule (Reset)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setCyclePhaseManual('CLOSED_EXPORTED');
-                setActionFeedback('Simulator: Switched to Stage 4: Sunday 22:00 Close. Timesheet exported (.xlsx) & timetable reset.');
-                setTimeout(() => setActionFeedback(null), 5000);
-              }}
-              className={`py-2 px-2.5 rounded-lg text-xs font-medium text-center justify-center transition-all active:scale-95 cursor-pointer ${
-                cyclePhase === 'CLOSED_EXPORTED'
-                  ? 'bg-purple-600 text-white font-bold shadow-xs'
-                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              4. Sunday 22:00 Close (Export)
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Schedule Editing Command & Freedom Toolbar (No Limits) */}
-      <div className="bg-gradient-to-r from-indigo-50 via-slate-50 to-emerald-50 border border-indigo-200/80 p-4 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-xs shrink-0">
-            <Zap className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-              <span>Unrestricted Schedule Editing</span>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full border border-emerald-300 uppercase">
-                Zero Limits Active
-              </span>
-              {inlineEditMode && (
-                <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full border border-indigo-300 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
-                  In-Table Quick Edit Active
-                </span>
-              )}
-            </div>
-            <div className="text-slate-600 font-medium mt-0.5 leading-relaxed">
-              Edit any start/finish time directly in table cells or presets. Schedule custom morning prep, split shifts, or late night finishes across all 24 hours with zero boundary restrictions.
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
-          {/* Toggle In-Table Quick Edit */}
-          <button
-            type="button"
-            onClick={() => {
-              setInlineEditMode(!inlineEditMode);
-              setActionFeedback(
-                !inlineEditMode
-                  ? 'In-Table Quick Edit activated: Direct cell inputs and 1-click presets enabled.'
-                  : 'In-Table Quick Edit toggled off.'
-              );
-              setTimeout(() => setActionFeedback(null), 3000);
-            }}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
-              inlineEditMode
-                ? 'bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-300'
-                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
-            }`}
-            title="Toggle direct in-table time inputs and one-click quick presets"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>{inlineEditMode ? 'Quick Edit: ON' : 'Enable Quick Edit'}</span>
-          </button>
-
-          {/* Copy Day Roster Button */}
-          <button
-            type="button"
-            onClick={() => setShowCopyDayModal(true)}
-            className="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            title="Duplicate an entire day's roster to another day"
-          >
-            <Copy className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Copy Day Roster</span>
-          </button>
         </div>
       </div>
 
@@ -965,11 +828,15 @@ export const ManagerSchedule: React.FC = () => {
                                   }}
                                   className="w-full text-[10px] p-1 rounded border border-amber-200 bg-amber-50 font-medium"
                                 >
-                                  <option value="">Assign staff...</option>
-                                  {staffUsers.map((u) => (
-                                    <option key={u.id} value={u.id}>
-                                      {u.firstName} ({u.position})
-                                    </option>
+                                  <option value="">Assign staff (by role)...</option>
+                                  {getStaffByRoles(staffUsers).map((group) => (
+                                    <optgroup key={group.label} label={group.label}>
+                                      {group.items.map((u) => (
+                                        <option key={u.id} value={u.id}>
+                                          {u.firstName} ({u.position})
+                                        </option>
+                                      ))}
+                                    </optgroup>
                                   ))}
                                 </select>
                               </div>
@@ -1007,11 +874,15 @@ export const ManagerSchedule: React.FC = () => {
                                   }}
                                   className="w-full text-[10px] p-1 rounded border border-indigo-200 bg-indigo-50 font-medium"
                                 >
-                                  <option value="">Assign staff...</option>
-                                  {staffUsers.map((u) => (
-                                    <option key={u.id} value={u.id}>
-                                      {u.firstName} ({u.position})
-                                    </option>
+                                  <option value="">Assign staff (by role)...</option>
+                                  {getStaffByRoles(staffUsers).map((group) => (
+                                    <optgroup key={group.label} label={group.label}>
+                                      {group.items.map((u) => (
+                                        <option key={u.id} value={u.id}>
+                                          {u.firstName} ({u.position})
+                                        </option>
+                                      ))}
+                                    </optgroup>
                                   ))}
                                 </select>
                               </div>
@@ -1239,28 +1110,20 @@ export const ManagerSchedule: React.FC = () => {
                                           </button>
                                         </div>
                                       </div>
-                                    ) : (
+                                    ) : isLunchAvail ? (
                                       <div className="flex items-center gap-1 w-full justify-center">
-                                        {isLunchAvail ? (
-                                          <button
-                                            type="button"
-                                            onClick={() => handleQuickAddShift(staff.id, day, 'lunch')}
-                                            className="px-2 py-0.5 text-[10px] rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
-                                            title="Staff submitted availability. Click to schedule Lunch shift immediately"
-                                          >
-                                            <span>+ Avail</span>
-                                          </button>
-                                        ) : (
-                                          <button
-                                            type="button"
-                                            onClick={() => handleDirectAddShift(staff.id, day, 'lunch', '11:15', '14:30')}
-                                            className="px-1.5 py-0.5 text-[10px] rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold cursor-pointer transition-colors"
-                                            title="Quick schedule 11:15 - 14:30"
-                                          >
-                                            + 11:15
-                                          </button>
-                                        )}
-
+                                        <button
+                                          type="button"
+                                          onClick={() => handleQuickAddShift(staff.id, day, 'lunch')}
+                                          className="px-2 py-0.5 text-[10px] rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
+                                          title="Staff submitted availability. Click to schedule Lunch shift immediately"
+                                        >
+                                          <span>+ Avail</span>
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      /* When the staff has not yet submitted their availability for this slot, the slot is completely empty */
+                                      <div className="group relative min-h-[30px] flex items-center justify-center">
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -1268,10 +1131,10 @@ export const ManagerSchedule: React.FC = () => {
                                             setQuickInputEnd('14:30');
                                             setQuickInputCell({ staffId: staff.id, day, shiftType: 'lunch' });
                                           }}
-                                          className="text-[9px] text-slate-400 hover:text-amber-800 px-1 py-0.5 hover:bg-amber-50 rounded font-semibold cursor-pointer"
-                                          title="Enter custom time with no limits"
+                                          className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-slate-300 hover:text-amber-800 hover:bg-amber-100/60 px-1.5 py-0.5 rounded cursor-pointer font-bold"
+                                          title="Staff has not submitted availability. Click to manually schedule override."
                                         >
-                                          Custom
+                                          +
                                         </button>
                                       </div>
                                     )}
@@ -1445,28 +1308,20 @@ export const ManagerSchedule: React.FC = () => {
                                           </button>
                                         </div>
                                       </div>
-                                    ) : (
+                                    ) : isDinnerAvail ? (
                                       <div className="flex items-center gap-1 w-full justify-center">
-                                        {isDinnerAvail ? (
-                                          <button
-                                            type="button"
-                                            onClick={() => handleQuickAddShift(staff.id, day, 'dinner')}
-                                            className="px-2 py-0.5 text-[10px] rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
-                                            title="Staff submitted availability. Click to schedule Dinner shift immediately"
-                                          >
-                                            <span>+ Avail</span>
-                                          </button>
-                                        ) : (
-                                          <button
-                                            type="button"
-                                            onClick={() => handleDirectAddShift(staff.id, day, 'dinner', '16:45', '22:00')}
-                                            className="px-1.5 py-0.5 text-[10px] rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold cursor-pointer transition-colors"
-                                            title="Quick schedule 16:45 - 22:00"
-                                          >
-                                            + 16:45
-                                          </button>
-                                        )}
-
+                                        <button
+                                          type="button"
+                                          onClick={() => handleQuickAddShift(staff.id, day, 'dinner')}
+                                          className="px-2 py-0.5 text-[10px] rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
+                                          title="Staff submitted availability. Click to schedule Dinner shift immediately"
+                                        >
+                                          <span>+ Avail</span>
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      /* When the staff has not yet submitted their availability for this slot, the slot is completely empty */
+                                      <div className="group relative min-h-[30px] flex items-center justify-center">
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -1474,10 +1329,10 @@ export const ManagerSchedule: React.FC = () => {
                                             setQuickInputEnd('22:00');
                                             setQuickInputCell({ staffId: staff.id, day, shiftType: 'dinner' });
                                           }}
-                                          className="text-[9px] text-slate-400 hover:text-indigo-800 px-1 py-0.5 hover:bg-indigo-50 rounded font-semibold cursor-pointer"
-                                          title="Enter custom time with no limits"
+                                          className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-slate-300 hover:text-indigo-800 hover:bg-indigo-100/60 px-1.5 py-0.5 rounded cursor-pointer font-bold"
+                                          title="Staff has not submitted availability. Click to manually schedule override."
                                         >
-                                          Custom
+                                          +
                                         </button>
                                       </div>
                                     )}
@@ -1624,14 +1479,18 @@ export const ManagerSchedule: React.FC = () => {
                             className="w-full text-xs p-1.5 rounded-lg border border-slate-300 bg-white font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
                           >
                             <option value="">-- Unassigned --</option>
-                            {staffUsers.map((u) => {
-                              const isAvail = checkStaffAvailable(u.id, day, 'lunch');
-                              return (
-                                <option key={u.id} value={u.id}>
-                                  {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} {isAvail ? '(Available)' : ''}
-                                </option>
-                              );
-                            })}
+                            {getStaffByRoles(staffUsers).map((group) => (
+                              <optgroup key={group.label} label={group.label}>
+                                {group.items.map((u) => {
+                                  const isAvail = checkStaffAvailable(u.id, day, 'lunch');
+                                  return (
+                                    <option key={u.id} value={u.id}>
+                                      {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}) {isAvail ? '— Available' : ''}
+                                    </option>
+                                  );
+                                })}
+                              </optgroup>
+                            ))}
                           </select>
                         </div>
                       ))}
@@ -1696,14 +1555,18 @@ export const ManagerSchedule: React.FC = () => {
                             className="w-full text-xs p-1.5 rounded-lg border border-slate-300 bg-white font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
                           >
                             <option value="">-- Unassigned --</option>
-                            {staffUsers.map((u) => {
-                              const isAvail = checkStaffAvailable(u.id, day, 'dinner');
-                              return (
-                                <option key={u.id} value={u.id}>
-                                  {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} {isAvail ? '(Available)' : ''}
-                                </option>
-                              );
-                            })}
+                            {getStaffByRoles(staffUsers).map((group) => (
+                              <optgroup key={group.label} label={group.label}>
+                                {group.items.map((u) => {
+                                  const isAvail = checkStaffAvailable(u.id, day, 'dinner');
+                                  return (
+                                    <option key={u.id} value={u.id}>
+                                      {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}) {isAvail ? '— Available' : ''}
+                                    </option>
+                                  );
+                                })}
+                              </optgroup>
+                            ))}
                           </select>
                         </div>
                       ))}
@@ -1877,23 +1740,84 @@ export const ManagerSchedule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Assign Staff */}
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Assign Staff Member:</label>
+              {/* Assign Staff (Grouped & Viewable by Role) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="font-bold text-slate-700">Assign Staff Member (View by Role):</label>
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <span className="text-slate-400 font-medium">Role:</span>
+                    <button
+                      type="button"
+                      onClick={() => setModalRoleFilter('all')}
+                      className={`px-2 py-0.5 rounded-md font-bold cursor-pointer transition-colors ${
+                        modalRoleFilter === 'all'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      All Roles
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalRoleFilter('wait_staff')}
+                      className={`px-2 py-0.5 rounded-md font-bold cursor-pointer transition-colors ${
+                        modalRoleFilter === 'wait_staff'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      🍽️ Wait
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalRoleFilter('bar_staff')}
+                      className={`px-2 py-0.5 rounded-md font-bold cursor-pointer transition-colors ${
+                        modalRoleFilter === 'bar_staff'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      🍸 Bar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalRoleFilter('kitchen')}
+                      className={`px-2 py-0.5 rounded-md font-bold cursor-pointer transition-colors ${
+                        modalRoleFilter === 'kitchen'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      👨‍🍳 Kitchen
+                    </button>
+                  </div>
+                </div>
+
                 <select
                   value={newShiftStaffId}
-                  onChange={(e) => setNewShiftStaffId(e.target.value)}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl bg-white text-slate-800 font-medium"
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setNewShiftStaffId(selectedId);
+                    const staff = staffUsers.find((s) => s.id === selectedId);
+                    if (staff && staff.position) {
+                      setNewShiftRoleRequired(staff.position);
+                    }
+                  }}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl bg-white text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">-- Leave Open / Unassigned Slot --</option>
-                  {staffUsers.map((u) => {
-                    const isAvail = checkStaffAvailable(u.id, newShiftDay, newShiftType);
-                    return (
-                      <option key={u.id} value={u.id}>
-                        {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}) {isAvail ? '— Available' : ''}
-                      </option>
-                    );
-                  })}
+                  {getStaffByRoles(staffUsers, modalRoleFilter).map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.items.map((u) => {
+                        const isAvail = checkStaffAvailable(u.id, newShiftDay, newShiftType);
+                        return (
+                          <option key={u.id} value={u.id}>
+                            {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}){isAvail ? ' — Available' : ''}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
 
@@ -2113,23 +2037,84 @@ export const ManagerSchedule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Reassign Staff */}
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Assign Staff Member:</label>
+              {/* Reassign Staff (Grouped & Viewable by Role) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="font-bold text-slate-700">Assign Staff Member (View by Role):</label>
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <span className="text-slate-400 font-medium">Role:</span>
+                    <button
+                      type="button"
+                      onClick={() => setModalRoleFilter('all')}
+                      className={`px-2 py-0.5 rounded-md font-bold cursor-pointer transition-colors ${
+                        modalRoleFilter === 'all'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      All Roles
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalRoleFilter('wait_staff')}
+                      className={`px-2 py-0.5 rounded-md font-bold cursor-pointer transition-colors ${
+                        modalRoleFilter === 'wait_staff'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      🍽️ Wait
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalRoleFilter('bar_staff')}
+                      className={`px-2 py-0.5 rounded-md font-bold cursor-pointer transition-colors ${
+                        modalRoleFilter === 'bar_staff'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      🍸 Bar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalRoleFilter('kitchen')}
+                      className={`px-2 py-0.5 rounded-md font-bold cursor-pointer transition-colors ${
+                        modalRoleFilter === 'kitchen'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      👨‍🍳 Kitchen
+                    </button>
+                  </div>
+                </div>
+
                 <select
                   value={editStaffId}
-                  onChange={(e) => setEditStaffId(e.target.value)}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl bg-white text-slate-800 font-medium"
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setEditStaffId(selectedId);
+                    const staff = staffUsers.find((s) => s.id === selectedId);
+                    if (staff && staff.position) {
+                      setEditRoleRequired(staff.position);
+                    }
+                  }}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl bg-white text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">-- Leave Open / Unassigned --</option>
-                  {staffUsers.map((u) => {
-                    const isAvail = checkStaffAvailable(u.id, editDay, editShiftType);
-                    return (
-                      <option key={u.id} value={u.id}>
-                        {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}) {isAvail ? '— Available' : ''}
-                      </option>
-                    );
-                  })}
+                  {getStaffByRoles(staffUsers, modalRoleFilter).map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.items.map((u) => {
+                        const isAvail = checkStaffAvailable(u.id, editDay, editShiftType);
+                        return (
+                          <option key={u.id} value={u.id}>
+                            {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}){isAvail ? ' — Available' : ''}
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
 
