@@ -10,17 +10,18 @@ permissions:
   contents: write
 
 jobs:
-  Gradle:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: setup jdk
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '17'
 
       - name: Make Gradle executable
         run: chmod +x ./gradlew
@@ -31,12 +32,18 @@ jobs:
       - name: Find release APK
         id: apk
         run: |
-          APK_PATH=$(find "${GITHUB_WORKSPACE}" -path '*/build/outputs/apk/release/*.apk' -type f | head -n 1)
+          APK_PATH=$(find "$GITHUB_WORKSPACE" -path '*/build/outputs/apk/release/*.apk' -type f | head -n 1)
           if [ -z "$APK_PATH" ]; then
             echo "No release APK found in build outputs."
             exit 1
           fi
           echo "apk_path=$APK_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: ${{ steps.apk.outputs.apk_path }}
 
       - name: Publish APK to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
