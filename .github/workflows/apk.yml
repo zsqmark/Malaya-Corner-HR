@@ -6,6 +6,9 @@ on:
       - '*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   Gradle:
     runs-on: ubuntu-latest
@@ -28,7 +31,7 @@ jobs:
       - name: Find release APK
         id: apk
         run: |
-          APK_PATH=$(find . -path '*/build/outputs/apk/release/*.apk' -type f | head -n 1)
+          APK_PATH=$(find "${GITHUB_WORKSPACE}" -path '*/build/outputs/apk/release/*.apk' -type f | head -n 1)
           if [ -z "$APK_PATH" ]; then
             echo "No release APK found in build outputs."
             exit 1
