@@ -590,8 +590,19 @@ export const StaffOnboarding: React.FC = () => {
 
           {/* Q15: Food Hygiene Online Training Certificate */}
           <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
-            <label className="text-xs font-bold text-slate-900 flex items-center gap-1">
-              15. Please complete the food hygiene online training course and upload your certificate below. <span className="text-red-500">*</span>
+            <label className="text-xs font-bold text-slate-900 leading-relaxed block">
+              15. Please complete the{' '}
+              <a
+                href="http://www.brisbane.imalert.com.au"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:text-indigo-800 underline font-bold inline-flex items-center gap-1"
+                title="Open Brisbane I'M ALERT Food Hygiene Online Training"
+              >
+                food hygiene online training course
+                <ExternalLink className="w-3 h-3 shrink-0" />
+              </a>{' '}
+              and upload your certificate below. <span className="text-red-500">*</span>
             </label>
             <div className="p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1">
               <div className="font-bold text-slate-800">To help you complete the course registration:</div>

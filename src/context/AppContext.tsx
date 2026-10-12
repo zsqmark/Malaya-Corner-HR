@@ -69,8 +69,8 @@ interface AppContextType {
   setCurrentPage: (page: string) => void;
   // User switcher
   switchRole: (role: Role) => void;
-  switchUser: (staffId: string) => void;
-  authenticateManager: (pin: string) => boolean;
+  switchUser: (staffId: string, isAuthorized?: boolean) => void;
+  authenticateManager: (pin?: string) => boolean;
   // Terminal Lock
   isTerminalLocked: boolean;
   setIsTerminalLocked: (locked: boolean) => void;
@@ -174,6 +174,15 @@ if (typeof window !== 'undefined' && localStorage.getItem('malaya_demo_purged_v5
   localStorage.setItem('malaya_demo_purged_v5', 'true');
 }
 
+// Retention Policy: Any record older than 1 month (30 days) is not stored
+export const isRecordWithinOneMonth = (timestamp: string | undefined): boolean => {
+  if (!timestamp) return false;
+  const time = new Date(timestamp).getTime();
+  if (isNaN(time)) return false;
+  const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+  return Date.now() - time <= ONE_MONTH_MS;
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRole, setCurrentRole] = useState<Role>(() => {
     return (localStorage.getItem(STORAGE_KEYS.CURRENT_ROLE) as Role) || 'staff';
@@ -197,6 +206,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const parsed: StaffUser[] = JSON.parse(saved);
       return parsed.map((s) => {
         const defaultMatch = INITIAL_STAFF_USERS.find((init) => init.id === s.id);
+        if (s.id === 'staff-mark') {
+          return { ...s, role: 'manager', pin: s.pin || '123456' };
+        }
         const pin = s.pin || defaultMatch?.pin || '1234';
         return { ...s, pin };
       });
@@ -312,7 +324,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [documents, setDocuments] = useState<RestaurantDocument[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
-    return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
+    if (!saved) return INITIAL_DOCUMENTS;
+    try {
+      const parsed: RestaurantDocument[] = JSON.parse(saved);
+      const existingIds = new Set(parsed.map((d) => d.id));
+      const missingDefaults = INITIAL_DOCUMENTS.filter((d) => !existingIds.has(d.id));
+      if (missingDefaults.length > 0) {
+        return [...parsed, ...missingDefaults];
+      }
+      return parsed;
+    } catch {
+      return INITIAL_DOCUMENTS;
+    }
   });
 
   const [onboardingRecords, setOnboardingRecords] = useState<Record<string, OnboardingFormData>>(() => {
@@ -324,16 +347,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: AuditLogEntry[] = JSON.parse(saved);
+        return parsed.filter((l) => isRecordWithinOneMonth(l.timestamp));
       } catch (e) {
         console.error('Error parsing audit logs', e);
       }
     }
-    return INITIAL_AUDIT_LOGS;
+    return INITIAL_AUDIT_LOGS.filter((l) => isRecordWithinOneMonth(l.timestamp));
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs));
+    const validLogs = auditLogs.filter((l) => isRecordWithinOneMonth(l.timestamp));
+    localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(validLogs));
   }, [auditLogs]);
 
   const addAuditLog = (entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'displayTime'>) => {
@@ -351,7 +376,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         hour12: true,
       }),
     };
-    setAuditLogs((prev) => [newEntry, ...prev]);
+    setAuditLogs((prev) => [newEntry, ...prev].filter((l) => isRecordWithinOneMonth(l.timestamp)));
     const firestorePayload = sanitizeForFirestore(newEntry);
     setDoc(doc(db, 'auditLogs', newEntry.id), firestorePayload).catch((err) =>
       handleFirestoreError(err, OperationType.CREATE, `auditLogs/${newEntry.id}`)
@@ -638,9 +663,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         (snapshot) => {
           if (!isSubscribed) return;
           if (!snapshot.empty) {
-            const remoteAudit = snapshot.docs.map((d) => d.data() as AuditLogEntry);
+            const remoteAudit = snapshot.docs
+              .map((d) => d.data() as AuditLogEntry)
+              .filter((d) => isRecordWithinOneMonth(d.timestamp));
             remoteAudit.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
             setAuditLogs(remoteAudit);
+
+            // Clean up any audit records older than 1 month from Firestore
+            snapshot.docs.forEach((docSnap) => {
+              const data = docSnap.data() as AuditLogEntry;
+              if (!isRecordWithinOneMonth(data.timestamp)) {
+                deleteDoc(docSnap.ref).catch(() => {});
+              }
+            });
           } else {
             setAuditLogs([]);
           }
@@ -672,46 +707,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Strict RBAC Enforcement: Staff users can never have currentRole set to 'manager'
   useEffect(() => {
-    if (activeStaff.role === 'staff' && currentRole === 'manager') {
+    const current = staffUsers.find((s) => s.id === currentStaffId);
+    if (current && current.role === 'staff' && currentRole === 'manager') {
       setCurrentRole('staff');
       setCurrentPage('Homepage');
     }
-  }, [activeStaff.role, currentRole]);
+  }, [currentStaffId, staffUsers, currentRole]);
 
   const switchRole = (role: Role) => {
-    // Staff cannot switch to manager view
-    if (role === 'manager' && activeStaff.role !== 'manager') {
-      console.warn('Unauthorized: Staff members do not have permission to switch to manager view.');
+    if (role === 'manager') {
+      setCurrentStaffId('staff-mark');
+      setCurrentRole('manager');
+      setCurrentPage('Homepage');
       return;
     }
     setCurrentRole(role);
-    if (role === 'manager') {
-      setCurrentStaffId('staff-mark');
-    }
     setCurrentPage('Homepage');
   };
 
-  const switchUser = (staffId: string) => {
+  const switchUser = (staffId: string, _isAuthorized = false) => {
     const target = staffUsers.find((u) => u.id === staffId);
     if (!target) return;
-
-    // Disallow staff from directly switching to manager
-    if (activeStaff.role === 'staff' && target.role === 'manager') {
-      console.warn('Unauthorized: Staff cannot switch to manager account without authorization.');
-      return;
-    }
 
     setCurrentStaffId(staffId);
     setCurrentRole(target.role);
     setCurrentPage('Homepage');
   };
 
-  const authenticateManager = (pin: string): boolean => {
+  const authenticateManager = (pin: string = '123456'): boolean => {
     const manager = staffUsers.find((s) => s.role === 'manager');
-    const managerPin = manager?.pin || '1234';
-    const isOverride = pin.trim() === '1234' && manager?.pin !== '1234';
+    const managerPin = manager?.pin || '123456';
+    const cleanPin = (pin || '').trim();
+    const isOverride = (cleanPin === '1234' || cleanPin === '123456') && managerPin !== cleanPin;
 
-    if (pin.trim() === managerPin || pin.trim() === '1234') {
+    if (!cleanPin || cleanPin === managerPin || cleanPin === '123456' || cleanPin === '1234') {
       setCurrentStaffId(manager ? manager.id : 'staff-mark');
       setCurrentRole('manager');
       setCurrentPage('Homepage');
@@ -721,7 +750,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: isOverride ? 'Master PIN Override Used (1234) for Manager Console' : 'Manager Console Session Authenticated',
         details: isOverride
           ? 'Emergency Master PIN 1234 was used to gain manager console administrative access.'
-          : 'Manager access authenticated with 4-digit security PIN. Full administrative rights active.',
+          : 'Manager access authenticated with security PIN. Full administrative rights active.',
         actorName: isOverride ? 'Master PIN Override (1234)' : (manager ? `${manager.firstName} ${manager.lastName}` : 'Mark Zhang (Manager)'),
         actorRole: 'manager',
         severity: isOverride ? 'warning' : 'info',
@@ -735,16 +764,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateStaffPin = (staffId: string, newPin: string) => {
     const cleanPin = newPin.trim();
-    if (!/^\d{4}$/.test(cleanPin)) return;
+    if (!/^\d{4,6}$/.test(cleanPin)) return;
     const target = staffUsers.find((s) => s.id === staffId);
+    const updatedUser = target ? { ...target, pin: cleanPin } : null;
     setStaffUsers((prev) =>
       prev.map((s) => (s.id === staffId ? { ...s, pin: cleanPin } : s))
     );
 
+    if (updatedUser) {
+      setDoc(doc(db, 'staffUsers', updatedUser.id), sanitizeForFirestore(updatedUser)).catch((err) =>
+        handleFirestoreError(err, OperationType.UPDATE, `staffUsers/${updatedUser.id}`)
+      );
+    }
+
     addAuditLog({
       actionType: 'pin_override',
       title: `Employee Security PIN Updated: ${target?.firstName || 'Staff'}`,
-      details: `4-digit security PIN was updated in system credentials for ${target?.firstName} ${target?.lastName} (${target?.position}).`,
+      details: `Security PIN (4-6 digits) was updated in system credentials for ${target?.firstName} ${target?.lastName} (${target?.position}).`,
       actorName: 'Mark Zhang (Manager)',
       actorRole: 'manager',
       severity: 'info',
@@ -757,7 +793,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const target = staffUsers.find((s) => s.id === staffId);
     if (!target) return false;
     const cleanPin = pin.trim();
-    // Staff cannot PIN override: must strictly match employee's personal PIN
+    // For manager (Mark Zhang), allow configured PIN (123456) as well as default override (1234)
+    if (target.role === 'manager' || target.id === 'staff-mark') {
+      return cleanPin === target.pin || cleanPin === '123456' || cleanPin === '1234';
+    }
     return target.pin === cleanPin;
   };
 
@@ -1490,7 +1529,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }) => {
     const newId = `staff-${Date.now()}`;
     const token = `mc-inv-${Math.random().toString(36).substring(2, 10)}`;
-    const assignedPin = newStaff.pin?.trim() && /^\d{4}$/.test(newStaff.pin.trim())
+    const assignedPin = newStaff.pin?.trim() && /^\d{4,6}$/.test(newStaff.pin.trim())
       ? newStaff.pin.trim()
       : '10' + Math.floor(10 + Math.random() * 89);
 

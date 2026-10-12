@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { AuditLogEntry, AuditActionType, AuditSeverity } from '../../types';
 import { exportAuditLogsToCSV } from '../../utils/auditData';
@@ -17,12 +17,14 @@ import {
   FileSpreadsheet,
   User,
   Terminal,
+  ChevronLeft,
   ChevronRight,
   X,
   ExternalLink,
   ShieldCheck,
   Sparkles,
   Trash2,
+  KeyRound,
 } from 'lucide-react';
 
 export const ManagerAuditLog: React.FC = () => {
@@ -33,6 +35,10 @@ export const ManagerAuditLog: React.FC = () => {
   const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
   const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
   const [exportFeedback, setExportFeedback] = useState<string | null>(null);
+
+  // Pagination state (Max 50 records per page)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const RECORDS_PER_PAGE = 50;
 
   // Statistics
   const totalLogs = auditLogs.length;
@@ -89,6 +95,20 @@ export const ManagerAuditLog: React.FC = () => {
       return true;
     });
   }, [auditLogs, searchQuery, selectedActionType, selectedSeverity]);
+
+  // Reset to page 1 whenever filters or search query change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedActionType, selectedSeverity]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / RECORDS_PER_PAGE));
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  // Paginated records (Max 50 records per page)
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (validCurrentPage - 1) * RECORDS_PER_PAGE;
+    return filteredLogs.slice(startIndex, startIndex + RECORDS_PER_PAGE);
+  }, [filteredLogs, validCurrentPage]);
 
   const handleExportCSV = () => {
     exportAuditLogsToCSV(filteredLogs);
@@ -220,7 +240,7 @@ export const ManagerAuditLog: React.FC = () => {
             <span>Manager Audit Trail &amp; Accountability Log</span>
           </h1>
           <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Immutable chronological logging of restaurant operational events: weekly staff availability submissions, roster allocations, payroll timesheet exports, and manual security PIN overrides.
+            Immutable chronological logging of restaurant operational events (retained up to 1 month, max 50 records per page): weekly staff availability submissions, roster allocations, payroll timesheet exports, and manual security PIN overrides.
           </p>
         </div>
 
@@ -416,18 +436,24 @@ export const ManagerAuditLog: React.FC = () => {
 
       {/* Main Audit Log Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-slate-800">
               Recorded Audit Events
             </span>
             <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold text-[10px]">
-              Showing {filteredLogs.length} of {totalLogs}
+              Showing {filteredLogs.length > 0 ? (validCurrentPage - 1) * RECORDS_PER_PAGE + 1 : 0}–{Math.min(validCurrentPage * RECORDS_PER_PAGE, filteredLogs.length)} of {filteredLogs.length}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold text-[10px]">
+              Max 50 / page
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold text-[10px]" title="Records older than 1 month are automatically removed">
+              1-Month Retention
             </span>
           </div>
-          <span className="text-[11px] text-slate-500 hidden sm:inline">
-            Click any entry to view full metadata payload &amp; device audit trail
-          </span>
+          <div className="text-[11px] text-slate-500 font-medium">
+            Page <strong className="text-slate-800">{validCurrentPage}</strong> of <strong className="text-slate-800">{totalPages}</strong>
+          </div>
         </div>
 
         {filteredLogs.length === 0 ? (
@@ -443,14 +469,14 @@ export const ManagerAuditLog: React.FC = () => {
                 setSelectedSeverity('all');
                 setSearchQuery('');
               }}
-              className="mt-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-xs"
+              className="mt-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-xs cursor-pointer"
             >
               Reset Filters
             </button>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {filteredLogs.map((log) => {
+            {paginatedLogs.map((log) => {
               const actionBadge = getActionBadge(log.actionType);
               const severityBadge = getSeverityBadge(log.severity);
               const ActionIcon = actionBadge.icon;
@@ -513,6 +539,73 @@ export const ManagerAuditLog: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Pagination Navigation Footer */}
+        {totalPages > 1 && (
+          <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="text-slate-500 font-medium">
+              Showing <strong className="text-slate-900">{(validCurrentPage - 1) * RECORDS_PER_PAGE + 1}</strong> to{' '}
+              <strong className="text-slate-900">
+                {Math.min(validCurrentPage * RECORDS_PER_PAGE, filteredLogs.length)}
+              </strong>{' '}
+              of <strong className="text-slate-900">{filteredLogs.length}</strong> records (Max 50 per page)
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={validCurrentPage === 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Previous</span>
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((page) => {
+                    return (
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - validCurrentPage) <= 2
+                    );
+                  })
+                  .map((page, idx, arr) => {
+                    const prev = arr[idx - 1];
+                    const showEllipsis = prev && page - prev > 1;
+
+                    return (
+                      <React.Fragment key={page}>
+                        {showEllipsis && <span className="px-1 text-slate-400">…</span>}
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                            page === validCurrentPage
+                              ? 'bg-indigo-600 text-white shadow-2xs'
+                              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={validCurrentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         )}
       </div>

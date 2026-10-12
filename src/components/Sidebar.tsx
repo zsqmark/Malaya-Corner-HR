@@ -65,9 +65,9 @@ export const Sidebar: React.FC = () => {
     { name: 'My Task', icon: CheckSquare },
     { name: 'Daily Checklist', icon: ClipboardList },
     {
-      name: 'Onboarding',
-      icon: UserCheck2,
-      badge: !activeStaff.onboardingCompleted ? 'Required' : 'Done',
+      name: activeStaff.role === 'manager' || effectiveRole === 'manager' ? 'Staff' : 'Onboarding',
+      icon: activeStaff.role === 'manager' || effectiveRole === 'manager' ? Users : UserCheck2,
+      badge: activeStaff.role === 'manager' || effectiveRole === 'manager' ? null : (!activeStaff.onboardingCompleted ? 'Required' : 'Done'),
       badgeColor: !activeStaff.onboardingCompleted ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800',
     },
     { name: 'Documents', icon: FolderLock },
@@ -78,7 +78,7 @@ export const Sidebar: React.FC = () => {
     { name: 'Weekly Schedule', icon: Calendar },
     { name: 'Timesheet', icon: Clock },
     { name: 'Task', icon: CheckSquare },
-    { name: 'Staffs', icon: Users },
+    { name: 'Staff', icon: Users },
     { name: 'Audit Log', icon: ShieldAlert, badge: 'Security', badgeColor: 'bg-indigo-100 text-indigo-800' },
     { name: 'Documents', icon: FolderLock },
   ];
@@ -342,7 +342,7 @@ export const Sidebar: React.FC = () => {
               { name: 'Homepage', label: 'Home', icon: Home },
               { name: 'Weekly Schedule', label: 'Roster', icon: Calendar },
               { name: 'Timesheet', label: 'Timesheet', icon: Clock },
-              { name: 'Staffs', label: 'Staffs', icon: Users },
+              { name: 'Staff', label: 'Staff', icon: Users },
               { name: 'Documents', label: 'Documents', icon: FolderLock },
             ]
           : [

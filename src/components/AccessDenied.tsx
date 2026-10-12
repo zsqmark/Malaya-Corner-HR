@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ShieldAlert, Lock, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ShieldAlert, Lock, ArrowLeft, ShieldCheck, KeyRound, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 interface AccessDeniedProps {
   attemptedPage: string;
@@ -8,10 +8,26 @@ interface AccessDeniedProps {
 
 export const AccessDenied: React.FC<AccessDeniedProps> = ({ attemptedPage }) => {
   const { activeStaff, setCurrentPage, authenticateManager } = useApp();
+  const [managerPin, setManagerPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleUnlockManager = () => {
-    authenticateManager();
-    setCurrentPage(attemptedPage);
+  const handleUnlockManager = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setErrorMsg('');
+
+    const clean = managerPin.trim();
+    if (!clean) {
+      setErrorMsg('Please enter manager PIN (e.g. 123456 or 1234).');
+      return;
+    }
+
+    const success = authenticateManager(clean);
+    if (success) {
+      setCurrentPage(attemptedPage);
+    } else {
+      setErrorMsg('Incorrect manager PIN. Please enter valid passcode (123456 or 1234).');
+    }
   };
 
   return (
@@ -55,21 +71,67 @@ export const AccessDenied: React.FC<AccessDeniedProps> = ({ attemptedPage }) => 
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        {/* Manager PIN Unlock Form */}
+        <form onSubmit={handleUnlockManager} className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 text-left space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
+              <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Enter Manager Passcode to Unlock</span>
+            </label>
+            <span className="text-[10px] text-indigo-700">Mark Zhang PIN: 123456 or 1234</span>
+          </div>
+
+          <div className="relative">
+            <input
+              type={showPin ? 'text' : 'password'}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={managerPin}
+              onChange={(e) => {
+                setManagerPin(e.target.value.replace(/\D/g, ''));
+                setErrorMsg('');
+              }}
+              placeholder="Enter Manager Passcode (123456 or 1234)..."
+              autoComplete="off"
+              className="w-full pl-3.5 pr-10 py-2.5 text-sm font-mono font-bold tracking-widest border border-indigo-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white text-slate-900"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPin(!showPin)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+            >
+              {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {errorMsg && (
+            <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-1">
+            <button
+              type="submit"
+              disabled={managerPin.length < 4}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-xs shadow-indigo-200 cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4 text-white" />
+              Unlock as Mark Zhang (Manager)
+            </button>
+          </div>
+        </form>
+
+        <div className="flex justify-center pt-1">
           <button
+            type="button"
             onClick={() => setCurrentPage('My Schedule')}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             Go to My Personal Schedule
-          </button>
-
-          <button
-            onClick={handleUnlockManager}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm shadow-indigo-200 cursor-pointer"
-          >
-            <ShieldCheck className="w-4 h-4 text-white" />
-            Switch to Manager Console
           </button>
         </div>
       </div>

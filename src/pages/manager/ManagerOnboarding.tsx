@@ -26,6 +26,9 @@ import {
   LogIn,
   Lock,
   RefreshCw,
+  KeyRound,
+  EyeOff,
+  Edit3,
 } from 'lucide-react';
 
 export const ManagerOnboarding: React.FC = () => {
@@ -40,6 +43,7 @@ export const ManagerOnboarding: React.FC = () => {
     switchUser,
     switchRole,
     setCurrentPage,
+    updateStaffPin,
   } = useApp();
 
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
@@ -49,6 +53,67 @@ export const ManagerOnboarding: React.FC = () => {
     inviteToken: string;
     inviteUrl: string;
   } | null>(null);
+
+  // PIN viewing and editing state
+  const [revealedPins, setRevealedPins] = useState<Record<string, boolean>>({});
+  const [showAllPins, setShowAllPins] = useState(false);
+  const [editingPinStaff, setEditingPinStaff] = useState<StaffUser | null>(null);
+  const [newPinInput, setNewPinInput] = useState('');
+  const [showNewPin, setShowNewPin] = useState(false);
+  const [pinEditError, setPinEditError] = useState('');
+  const [pinSuccessToast, setPinSuccessToast] = useState<string | null>(null);
+
+  const toggleRevealPin = (staffId: string) => {
+    setRevealedPins((prev) => ({ ...prev, [staffId]: !prev[staffId] }));
+  };
+
+  const toggleShowAllPins = () => {
+    if (showAllPins) {
+      setRevealedPins({});
+      setShowAllPins(false);
+    } else {
+      const all: Record<string, boolean> = {};
+      staffUsers.forEach((s) => {
+        all[s.id] = true;
+      });
+      setRevealedPins(all);
+      setShowAllPins(true);
+    }
+  };
+
+  const handleOpenEditPin = (staff: StaffUser) => {
+    setEditingPinStaff(staff);
+    setNewPinInput(staff.pin || '');
+    setShowNewPin(false);
+    setPinEditError('');
+  };
+
+  const handleGenerateRandomPin = () => {
+    const randomPin = '10' + Math.floor(10 + Math.random() * 89);
+    setNewPinInput(randomPin);
+    setPinEditError('');
+  };
+
+  const handleSavePin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPinStaff) return;
+
+    const cleanPin = newPinInput.trim();
+    if (!cleanPin) {
+      setPinEditError('Security PIN cannot be empty.');
+      return;
+    }
+
+    if (!/^\d{4,6}$/.test(cleanPin)) {
+      setPinEditError('Security PIN must be between 4 and 6 digits (numbers only).');
+      return;
+    }
+
+    updateStaffPin(editingPinStaff.id, cleanPin);
+    setPinSuccessToast(`Security PIN for ${editingPinStaff.firstName} ${editingPinStaff.lastName} was updated to ${cleanPin}.`);
+    setTimeout(() => setPinSuccessToast(null), 6000);
+    setEditingPinStaff(null);
+  };
 
   // Filter and search
   const [filterType, setFilterType] = useState<'all' | 'bar_staff' | 'wait_staff'>('all');
@@ -175,18 +240,35 @@ export const ManagerOnboarding: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      {/* PIN Update Success Toast */}
+      {pinSuccessToast && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 text-xs flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="font-bold">{pinSuccessToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPinSuccessToast(null)}
+            className="p-1 rounded-lg text-emerald-700 hover:text-emerald-950 hover:bg-emerald-100 cursor-pointer text-xs font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
             <UserCheck className="w-4 h-4" />
-            HR Onboarding & Team Induction
+            Staff & Team Management
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Staff Onboarding & Recruitment
+            Staff Directory & Recruitment
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Invite new Bar Staff or Wait Staff to join Malaya Corner. Track submission of the 15-question induction form, VEVO checks, TFN, and food hygiene certificates.
+            Manage Bar Staff and Wait Staff at Malaya Corner. Track employee details, security PINs, hourly rates, and onboarding verification.
           </p>
         </div>
 
@@ -350,15 +432,27 @@ export const ManagerOnboarding: React.FC = () => {
             </select>
           </div>
 
-          <div className="relative min-w-[220px]">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search staff name, email, role..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
-            />
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={toggleShowAllPins}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer bg-white transition-colors"
+              title={showAllPins ? 'Mask all PINs' : 'Reveal all staff PINs'}
+            >
+              {showAllPins ? <EyeOff className="w-3.5 h-3.5 text-slate-500" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
+              <span>{showAllPins ? 'Hide All PINs' : 'View All PINs'}</span>
+            </button>
+
+            <div className="relative min-w-[200px]">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search staff name, email, role..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -417,6 +511,33 @@ export const ManagerOnboarding: React.FC = () => {
                   <a href={`tel:${staff.phone}`} className="font-mono text-[11px] text-slate-700 hover:text-indigo-600 block mt-0.5 truncate">
                     {staff.phone}
                   </a>
+                </div>
+
+                {/* Security PIN */}
+                <div className="flex items-center justify-between text-xs bg-indigo-50/60 p-2.5 rounded-xl border border-indigo-100">
+                  <div className="flex items-center gap-1.5 text-indigo-950 font-medium">
+                    <KeyRound className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                    <span className="text-[10px] text-indigo-700 uppercase font-bold">Security PIN:</span>
+                    <span className="font-mono font-bold tracking-wider text-xs">
+                      {revealedPins[staff.id] ? staff.pin : '••••'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleRevealPin(staff.id)}
+                      className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      title={revealedPins[staff.id] ? "Hide PIN" : "Reveal PIN"}
+                    >
+                      {revealedPins[staff.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditPin(staff)}
+                    className="px-2.5 py-1 text-[11px] font-bold text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 flex items-center gap-1 cursor-pointer shadow-2xs"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    Edit PIN
+                  </button>
                 </div>
 
                 {/* Status and Action Buttons */}
@@ -478,6 +599,7 @@ export const ManagerOnboarding: React.FC = () => {
                 <th className="p-3.5">Employee</th>
                 <th className="p-3.5">Employee Type</th>
                 <th className="p-3.5">Position</th>
+                <th className="p-3.5">Security PIN</th>
                 <th className="p-3.5">Phone</th>
                 <th className="p-3.5">Induction Status</th>
                 <th className="p-3.5 text-right">Actions</th>
@@ -532,6 +654,32 @@ export const ManagerOnboarding: React.FC = () => {
                       <div>{staff.position}</div>
                     </td>
 
+                    {/* Security PIN */}
+                    <td className="p-3.5">
+                      <div className="inline-flex items-center gap-1.5 bg-slate-100/90 hover:bg-slate-100 border border-slate-200/90 rounded-lg px-2.5 py-1">
+                        <KeyRound className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                        <span className="font-mono font-bold text-xs text-slate-800 tracking-wider">
+                          {revealedPins[staff.id] ? staff.pin : '••••'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleRevealPin(staff.id)}
+                          className="p-0.5 text-slate-400 hover:text-slate-700 rounded transition-colors cursor-pointer"
+                          title={revealedPins[staff.id] ? 'Hide PIN' : 'View PIN'}
+                        >
+                          {revealedPins[staff.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditPin(staff)}
+                          className="p-0.5 text-indigo-600 hover:text-indigo-800 rounded transition-colors ml-0.5 cursor-pointer"
+                          title="Edit Security PIN"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </td>
+
                     <td className="p-3.5 font-mono text-slate-600">
                       {staff.phone}
                     </td>
@@ -557,6 +705,14 @@ export const ManagerOnboarding: React.FC = () => {
 
                     <td className="p-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleOpenEditPin(staff)}
+                          className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-bold text-[11px] transition-colors inline-flex items-center gap-1 border border-slate-200/90 cursor-pointer"
+                          title="Edit Security PIN"
+                        >
+                          <KeyRound className="w-3 h-3 text-indigo-600" />
+                          PIN
+                        </button>
                         <button
                           onClick={() => setSelectedStaffId(staff.id)}
                           className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] transition-colors inline-flex items-center gap-1 shadow-xs shadow-indigo-200 cursor-pointer"
@@ -813,6 +969,43 @@ export const ManagerOnboarding: React.FC = () => {
               </button>
             </div>
 
+            {/* Security PIN & Terminal Access Card */}
+            <div className="p-3.5 sm:p-4 rounded-xl border border-indigo-200/90 bg-indigo-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 flex items-center gap-2">
+                    <span>Workforce Terminal Security PIN</span>
+                    <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-white border border-indigo-200 text-indigo-900 font-bold tracking-wider">
+                      {revealedPins[selectedStaff.id] ? selectedStaff.pin : '••••'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleRevealPin(selectedStaff.id)}
+                      className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                      title={revealedPins[selectedStaff.id] ? 'Hide PIN' : 'View PIN'}
+                    >
+                      {revealedPins[selectedStaff.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Mandatory 4–6 digit passcode for clocking in/out at the restaurant POS terminal.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleOpenEditPin(selectedStaff)}
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit PIN</span>
+              </button>
+            </div>
+
             {selectedDossier ? (
               <div className="space-y-6 text-xs">
                 {/* Section 1 */}
@@ -948,7 +1141,19 @@ export const ManagerOnboarding: React.FC = () => {
 
                     <div className="p-2.5 bg-white rounded-lg border border-slate-200 flex items-center justify-between">
                       <div>
-                        <div className="font-bold text-slate-900">15. Food Hygiene Training Certificate</div>
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <span>15.</span>
+                          <a
+                            href="http://www.brisbane.imalert.com.au"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-800 underline font-bold inline-flex items-center gap-1"
+                            title="Visit Brisbane I'M ALERT Food Hygiene Training"
+                          >
+                            Food Hygiene Online Training Course
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
                         <div className="text-[11px] text-slate-500 font-mono">
                           {selectedDossier.q15_foodHygieneCert?.fileName || 'Pending upload'}
                         </div>
@@ -1004,6 +1209,143 @@ export const ManagerOnboarding: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Staff Security PIN Modal */}
+      {editingPinStaff && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl p-5 sm:p-7 max-w-md w-full shadow-2xl border border-slate-200 text-left space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center shrink-0">
+                  <KeyRound className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                    Edit Security PIN
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Workforce Terminal Passcode Management
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setEditingPinStaff(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Target Staff Summary */}
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs uppercase shrink-0">
+                  {editingPinStaff.firstName[0]}
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900">
+                    {editingPinStaff.firstName} {editingPinStaff.lastName}
+                  </div>
+                  <div className="text-[11px] text-slate-500">{editingPinStaff.position}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Current PIN</span>
+                <span className="font-mono font-bold text-indigo-700 text-xs">{editingPinStaff.pin}</span>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSavePin} className="space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                    <span>New Security PIN (4–6 Digits)</span>
+                    <span className="text-red-500 font-bold">*</span>
+                  </label>
+                  <span
+                    className={`text-[11px] font-mono font-bold ${
+                      newPinInput.length >= 4 && newPinInput.length <= 6
+                        ? 'text-emerald-600'
+                        : newPinInput.length > 0
+                        ? 'text-amber-600'
+                        : 'text-slate-400'
+                    }`}
+                  >
+                    {newPinInput.length}/6 digits (min 4)
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showNewPin ? 'text' : 'password'}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={newPinInput}
+                    onChange={(e) => {
+                      setNewPinInput(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      setPinEditError('');
+                    }}
+                    placeholder="Enter 4 to 6 digits..."
+                    autoFocus
+                    className="w-full pl-3.5 pr-20 py-2.5 text-base font-mono font-bold tracking-widest border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-slate-900"
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPin(!showNewPin)}
+                      className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                      title={showNewPin ? 'Hide PIN' : 'Show PIN'}
+                    >
+                      {showNewPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGenerateRandomPin}
+                      className="px-2 py-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg border border-indigo-200 transition-colors cursor-pointer"
+                      title="Generate random 4-digit PIN"
+                    >
+                      Random
+                    </button>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  This PIN is required by the employee to log in at the Workforce Terminal and clock in/out for shifts.
+                </p>
+              </div>
+
+              {pinEditError && (
+                <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2 animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{pinEditError}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingPinStaff(null)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={newPinInput.length < 4 || newPinInput.length > 6}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-md shadow-indigo-200 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Save Security PIN</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

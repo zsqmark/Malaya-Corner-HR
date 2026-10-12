@@ -181,6 +181,14 @@ export interface RestaurantDocument {
   isProtected?: boolean;
 }
 
+// Timeclock Device & Kiosk Enforcement Settings
+export interface TimeclockDeviceSettings {
+  restrictToDesignatedTerminal: boolean; // if true, clock in/out is blocked on personal mobile devices
+  terminalName: string; // e.g. "Sunnybank POS Terminal #1 (Front Counter)"
+  designatedAccountId: string; // e.g. "staff-mark" or specific terminal user
+  allowManagerBypass: boolean; // whether manager role can bypass terminal restriction
+}
+
 // Audit Trail & Accountability
 export type AuditActionType =
   | 'availability_submit'
@@ -190,6 +198,7 @@ export type AuditActionType =
   | 'sunday_close'
   | 'pin_override'
   | 'pin_auth'
+  | 'terminal_setting'
   | 'timesheet_approval'
   | 'timesheet_edit'
   | 'onboarding_update';

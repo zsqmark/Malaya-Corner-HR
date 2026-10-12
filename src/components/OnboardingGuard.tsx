@@ -10,7 +10,7 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
   const { currentRole, activeStaff, currentPage, setCurrentPage, switchUser } = useApp();
 
   // Guard only applies to staff role and non-onboarding pages
-  if (currentRole === 'staff' && !activeStaff.onboardingCompleted && currentPage !== 'Onboarding') {
+  if (currentRole === 'staff' && !activeStaff.onboardingCompleted && currentPage !== 'Onboarding' && currentPage !== 'Staff') {
     return (
       <div className="max-w-4xl mx-auto my-8 p-6 sm:p-8 bg-white rounded-2xl border border-amber-200 shadow-sm">
         <div className="flex items-start gap-4">
@@ -72,7 +72,7 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
 
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <button
-                onClick={() => setCurrentPage('Onboarding')}
+                onClick={() => setCurrentPage('Staff')}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-colors text-sm"
               >
                 <FileText className="w-4 h-4" />

@@ -22,14 +22,37 @@ export const StaffDocuments: React.FC = () => {
   const [showChecklistPreview, setShowChecklistPreview] = useState(false);
 
   // Security Rule for staff:
-  // "However, the staff can only see their own submission and the file manager uploaded."
-  const visibleDocs = documents.filter((doc) => {
-    // 1. Files manager uploaded for all staff
-    const isCompanyFile = doc.uploadedFor === 'all';
-    // 2. Staff's own submissions
-    const isMySubmission = doc.uploadedFor === activeStaff.id;
+  const isVisibleForStaff = (doc: any): boolean => {
+    // Managers have full clearance to review all files
+    if (activeStaff.role === 'manager') return true;
 
-    if (!isCompanyFile && !isMySubmission) return false;
+    // 1. Files uploaded for everyone (Company-wide)
+    if (doc.uploadedFor === 'all') return true;
+
+    // 2. Staff's own submissions or direct uploads for them
+    if (doc.uploadedFor === activeStaff.id) return true;
+
+    // 3. Manager-only documents are strictly confidential and hidden from frontline staff
+    if (doc.uploadedFor === 'role:manager') return false;
+
+    // 4. Role: All frontline staff (Floor & Bar)
+    if (doc.uploadedFor === 'role:staff') return true;
+
+    // 5. Role: Bar staff
+    if (doc.uploadedFor === 'role:bar_staff') {
+      return activeStaff.staffType === 'bar_staff';
+    }
+
+    // 6. Role: Wait staff
+    if (doc.uploadedFor === 'role:wait_staff') {
+      return activeStaff.staffType === 'wait_staff' || activeStaff.position?.toLowerCase().includes('wait');
+    }
+
+    return false;
+  };
+
+  const visibleDocs = documents.filter((doc) => {
+    if (!isVisibleForStaff(doc)) return false;
 
     // Search query filter
     if (
@@ -43,10 +66,13 @@ export const StaffDocuments: React.FC = () => {
     // Category filter
     if (selectedCategory !== 'all') {
       if (selectedCategory === 'my_submissions') {
-        return isMySubmission;
+        return doc.uploadedFor === activeStaff.id;
       }
       if (selectedCategory === 'company_wide') {
-        return isCompanyFile;
+        return doc.uploadedFor === 'all';
+      }
+      if (selectedCategory === 'role_docs') {
+        return doc.uploadedFor.startsWith('role:');
       }
     }
 
@@ -55,6 +81,46 @@ export const StaffDocuments: React.FC = () => {
 
   const myCount = documents.filter((d) => d.uploadedFor === activeStaff.id).length;
   const companyCount = documents.filter((d) => d.uploadedFor === 'all').length;
+  const roleDocsCount = documents.filter(
+    (d) => isVisibleForStaff(d) && d.uploadedFor.startsWith('role:')
+  ).length;
+
+  const getStaffDocBadge = (doc: any) => {
+    if (doc.uploadedFor === activeStaff.id) {
+      return {
+        label: 'My Personal Submission',
+        className: 'bg-emerald-100 text-emerald-800',
+      };
+    }
+    if (doc.uploadedFor === 'all') {
+      return {
+        label: 'Company Policy',
+        className: 'bg-indigo-50 text-indigo-800 border border-indigo-100',
+      };
+    }
+    if (doc.uploadedFor === 'role:bar_staff') {
+      return {
+        label: 'Role: Bar Staff Guide',
+        className: 'bg-amber-100 text-amber-800 border border-amber-200',
+      };
+    }
+    if (doc.uploadedFor === 'role:wait_staff') {
+      return {
+        label: 'Role: Wait Staff Guide',
+        className: 'bg-sky-100 text-sky-800 border border-sky-200',
+      };
+    }
+    if (doc.uploadedFor === 'role:staff') {
+      return {
+        label: 'Team Guidelines',
+        className: 'bg-blue-100 text-blue-800 border border-blue-200',
+      };
+    }
+    return {
+      label: 'Shared Document',
+      className: 'bg-slate-100 text-slate-800',
+    };
+  };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -118,7 +184,7 @@ export const StaffDocuments: React.FC = () => {
           </button>
           <button
             onClick={() => setSelectedCategory('my_submissions')}
-            className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+            className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-colors cursor-pointer ${
               selectedCategory === 'my_submissions'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -126,6 +192,18 @@ export const StaffDocuments: React.FC = () => {
           >
             My Onboarding Submissions ({myCount})
           </button>
+          {roleDocsCount > 0 && (
+            <button
+              onClick={() => setSelectedCategory('role_docs')}
+              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                selectedCategory === 'role_docs'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              My Role Guidelines ({roleDocsCount})
+            </button>
+          )}
         </div>
       </div>
 
@@ -133,7 +211,7 @@ export const StaffDocuments: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {visibleDocs.length > 0 ? (
           visibleDocs.map((doc) => {
-            const isMine = doc.uploadedFor === activeStaff.id;
+            const badge = getStaffDocBadge(doc);
 
             return (
               <div
@@ -143,13 +221,9 @@ export const StaffDocuments: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span
-                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
-                        isMine
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-indigo-50 text-indigo-800 border border-indigo-100'
-                      }`}
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${badge.className}`}
                     >
-                      {isMine ? 'My Personal Submission' : 'Company Policy'}
+                      {badge.label}
                     </span>
                     <span className="text-[11px] text-slate-400 font-mono">{doc.fileSize}</span>
                   </div>
