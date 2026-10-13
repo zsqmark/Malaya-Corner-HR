@@ -172,6 +172,18 @@ export const ManagerAuditLog: React.FC = () => {
           bg: 'bg-amber-100 text-amber-900 border-amber-300',
           icon: Clock,
         };
+      case 'terminal_auth':
+        return {
+          label: 'Terminal Authorized',
+          bg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+          icon: ShieldCheck,
+        };
+      case 'terminal_deauth':
+        return {
+          label: 'Terminal Revoked',
+          bg: 'bg-rose-100 text-rose-900 border-rose-300',
+          icon: ShieldAlert,
+        };
       default:
         return {
           label: actionType,

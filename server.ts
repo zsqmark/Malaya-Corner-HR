@@ -1,13 +1,25 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from "./src/middleware/auth.ts";
 import { getOrCreateUser, getUsers } from "./src/db/users.ts";
 
+dotenv.config();
+
+// Ensure uncaught exceptions/rejections don't crash the server process
+process.on("uncaughtException", (err) => {
+  console.error("[Server] Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[Server] Unhandled Rejection at:", promise, "reason:", reason);
+});
+
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
@@ -50,7 +62,11 @@ async function startServer() {
     const pubFile = path.join(process.cwd(), "public", "Food handler skills and knowledge checklist.pdf");
     const distFile = path.join(process.cwd(), "dist", "Food handler skills and knowledge checklist.pdf");
     const targetFile = fs.existsSync(pubFile) ? pubFile : distFile;
-    res.download(targetFile, "Food handler skills and knowledge checklist.pdf");
+    if (fs.existsSync(targetFile)) {
+      res.download(targetFile, "Food handler skills and knowledge checklist.pdf");
+    } else {
+      res.status(404).send("Document not found");
+    }
   };
 
   app.get("/Food handler skills and knowledge checklist.pdf", handleChecklistDownload);
@@ -62,15 +78,22 @@ async function startServer() {
     const pubFile = path.join(process.cwd(), "public", "TFN_declaration_form_N3092.pdf");
     const distFile = path.join(process.cwd(), "dist", "TFN_declaration_form_N3092.pdf");
     const targetFile = fs.existsSync(pubFile) ? pubFile : distFile;
-    res.download(targetFile, "TFN_declaration_form_N3092.pdf");
+    if (fs.existsSync(targetFile)) {
+      res.download(targetFile, "TFN_declaration_form_N3092.pdf");
+    } else {
+      res.status(404).send("Document not found");
+    }
   };
 
   app.get("/TFN_declaration_form_N3092.pdf", handleTfnDownload);
 
-  // Vite middleware for development
+  // Vite middleware for development (with hmr disabled for AI Studio environment)
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: false,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
@@ -78,13 +101,52 @@ async function startServer() {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const indexPath = path.join(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send("Application dist build not found. Please run npm run build.");
+      }
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  // Global Express error handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("[Server Error]", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal Server Error" });
+    }
   });
+
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  });
+
+  server.on("error", (err: any) => {
+    if (err.code === "EADDRINUSE") {
+      console.warn(`[Server] Port ${PORT} already in use. Retrying in 1000ms...`);
+      setTimeout(() => {
+        try {
+          server.close();
+        } catch {}
+        server.listen(PORT, "0.0.0.0");
+      }, 1000);
+    } else {
+      console.error("[Server] Fatal server error:", err);
+    }
+  });
+
+  const shutdown = () => {
+    console.log("[Server] Shutting down gracefully...");
+    server.close(() => {
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error("[Server] Failed to start server:", err);
+});

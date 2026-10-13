@@ -189,6 +189,14 @@ export interface TimeclockDeviceSettings {
   allowManagerBypass: boolean; // whether manager role can bypass terminal restriction
 }
 
+export interface TerminalMetadata {
+  terminalId: string;
+  terminalName: string;
+  authorizedAt: string;
+  authorizedBy: string;
+  location?: string;
+}
+
 // Audit Trail & Accountability
 export type AuditActionType =
   | 'availability_submit'
@@ -199,6 +207,9 @@ export type AuditActionType =
   | 'pin_override'
   | 'pin_auth'
   | 'terminal_setting'
+  | 'terminal_auth'
+  | 'terminal_deauth'
+  | 'login'
   | 'timesheet_approval'
   | 'timesheet_edit'
   | 'onboarding_update';

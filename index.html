@@ -4,6 +4,52 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        try {
+          // Suppress errors originating from browser extensions
+          window.addEventListener('error', function(e) {
+            if (e.filename && e.filename.startsWith('chrome-extension://')) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              return true;
+            }
+          }, true);
+
+          // Fix Chrome extension "Cannot set property fetch of #<Window> which has only a getter"
+          var nativeFetch = window.fetch ? window.fetch.bind(window) : null;
+          var currentFetch = nativeFetch;
+
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            try {
+              Object.defineProperty(Window.prototype, 'fetch', {
+                get: function() {
+                  return currentFetch;
+                },
+                set: function(newFetch) {
+                  currentFetch = newFetch;
+                },
+                configurable: true,
+                enumerable: true,
+              });
+            } catch (_) {}
+          }
+
+          try {
+            Object.defineProperty(window, 'fetch', {
+              get: function() {
+                return currentFetch;
+              },
+              set: function(newFetch) {
+                currentFetch = newFetch;
+              },
+              configurable: true,
+              enumerable: true,
+            });
+          } catch (_) {}
+        } catch (_) {}
+      })();
+    </script>
     <title>Remix Remix 7shifts Restaurant HR &amp; Operations</title>
     <meta name="description" content="All-in-one restaurant workforce management and HR platform for scheduling, time tracking, daily checklists, onboarding, and documents." />
     <meta property="og:title" content="Remix Remix 7shifts Restaurant HR &amp; Operations" />

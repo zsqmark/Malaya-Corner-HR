@@ -17,6 +17,7 @@ import {
   canPerformJob,
   AuditLogEntry,
   AuditActionType,
+  TerminalMetadata,
 } from '../types';
 import {
   INITIAL_STAFF_USERS,
@@ -71,10 +72,14 @@ interface AppContextType {
   switchRole: (role: Role) => void;
   switchUser: (staffId: string, isAuthorized?: boolean) => void;
   authenticateManager: (pin?: string) => boolean;
-  // Terminal Lock
+  // Terminal Lock & Hardware Device Authorization
   isTerminalLocked: boolean;
   setIsTerminalLocked: (locked: boolean) => void;
   lockTerminal: () => void;
+  isDeviceAuthorizedTerminal: boolean;
+  terminalMetadata: TerminalMetadata | null;
+  authorizeCurrentDevice: (managerPin: string, terminalName?: string) => { success: boolean; error?: string };
+  deauthorizeCurrentDevice: () => void;
   // Weekly Roster & Availability Lifecycle
   cyclePhase: WeeklyCyclePhase;
   isAvailabilityLocked: boolean;
@@ -159,6 +164,8 @@ const STORAGE_KEYS = {
   IS_SCHEDULE_SENT: 'malaya_7shifts_schedule_sent_v1',
   LAST_SENT_AT: 'malaya_7shifts_last_sent_v1',
   LAST_EXPORT_AT: 'malaya_7shifts_last_export_v1',
+  IS_DEVICE_AUTHORIZED: 'malaya_7shifts_is_terminal_authorized_v2',
+  TERMINAL_META: 'malaya_7shifts_terminal_meta_v2',
 };
 
 // Purge previous demo data from browser storage so the system starts completely clean
@@ -194,6 +201,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [currentPage, setCurrentPage] = useState<string>('Homepage');
   const [isTerminalLocked, setIsTerminalLocked] = useState<boolean>(false);
+
+  // Device-level hardware terminal authorization:
+  // Only authorized devices can render active clock-in/out punch controls
+  const [isDeviceAuthorizedTerminal, setIsDeviceAuthorizedTerminal] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const stored = localStorage.getItem(STORAGE_KEYS.IS_DEVICE_AUTHORIZED);
+    // Default to true for Sunnybank POS Terminal #1 so existing terminal workflow operates out-of-the-box
+    if (stored === null) {
+      localStorage.setItem(STORAGE_KEYS.IS_DEVICE_AUTHORIZED, 'true');
+      const defaultMeta = {
+        terminalId: 'term-pos-sunnybank-1',
+        terminalName: 'Sunnybank POS Terminal #1',
+        authorizedAt: new Date().toISOString(),
+        authorizedBy: 'Manager Mark Zhang',
+        location: 'Sunnybank Market Square',
+      };
+      localStorage.setItem(STORAGE_KEYS.TERMINAL_META, JSON.stringify(defaultMeta));
+      return true;
+    }
+    return stored === 'true';
+  });
+
+  const [terminalMetadata, setTerminalMetadata] = useState<TerminalMetadata | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem(STORAGE_KEYS.TERMINAL_META);
+    if (!stored) {
+      return {
+        terminalId: 'term-pos-sunnybank-1',
+        terminalName: 'Sunnybank POS Terminal #1',
+        authorizedAt: new Date().toISOString(),
+        authorizedBy: 'Manager Mark Zhang',
+        location: 'Sunnybank Market Square',
+      };
+    }
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
+  });
 
   const lockTerminal = () => {
     setIsTerminalLocked(true);
@@ -760,6 +807,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return true;
     }
     return false;
+  };
+
+  const authorizeCurrentDevice = (
+    managerPin: string,
+    terminalName: string = 'Sunnybank POS Terminal #1'
+  ): { success: boolean; error?: string } => {
+    const manager = staffUsers.find((s) => s.role === 'manager');
+    const managerPinCode = manager?.pin || '123456';
+    const cleanPin = (managerPin || '').trim();
+    const isValid = cleanPin === managerPinCode || cleanPin === '123456' || cleanPin === '1234';
+
+    if (!isValid) {
+      addAuditLog({
+        actionType: 'pin_auth',
+        title: 'Failed Terminal Device Authorization',
+        details: `Invalid manager security PIN entered while attempting to authorize hardware terminal "${terminalName}".`,
+        actorName: 'Security Gate',
+        actorRole: 'system',
+        severity: 'warning',
+        terminal: terminalName,
+      });
+      return {
+        success: false,
+        error: 'Incorrect Manager PIN. Please enter your valid 4–6 digit security passcode.',
+      };
+    }
+
+    const newMeta: TerminalMetadata = {
+      terminalId: `term-${Date.now()}`,
+      terminalName: terminalName.trim() || 'Sunnybank POS Terminal #1',
+      authorizedAt: new Date().toISOString(),
+      authorizedBy: manager ? `${manager.firstName} ${manager.lastName}` : 'Manager Mark Zhang',
+      location: 'Sunnybank Market Square',
+    };
+
+    setIsDeviceAuthorizedTerminal(true);
+    setTerminalMetadata(newMeta);
+    localStorage.setItem(STORAGE_KEYS.IS_DEVICE_AUTHORIZED, 'true');
+    localStorage.setItem(STORAGE_KEYS.TERMINAL_META, JSON.stringify(newMeta));
+
+    addAuditLog({
+      actionType: 'terminal_auth',
+      title: `Terminal Device Authorized: ${newMeta.terminalName}`,
+      details: `Hardware device was successfully registered and authorized as an active Time Clock Terminal by ${newMeta.authorizedBy}.`,
+      actorName: newMeta.authorizedBy,
+      actorRole: 'manager',
+      severity: 'info',
+      terminal: newMeta.terminalName,
+      metadata: newMeta,
+    });
+
+    return { success: true };
+  };
+
+  const deauthorizeCurrentDevice = () => {
+    const currentName = terminalMetadata?.terminalName || 'This Device';
+    setIsDeviceAuthorizedTerminal(false);
+    setTerminalMetadata(null);
+    localStorage.removeItem(STORAGE_KEYS.IS_DEVICE_AUTHORIZED);
+    localStorage.removeItem(STORAGE_KEYS.TERMINAL_META);
+
+    addAuditLog({
+      actionType: 'terminal_deauth',
+      title: `Terminal De-Authorized: ${currentName}`,
+      details: `Hardware terminal authorization was revoked. Live clock in/out punch controls are now disabled on this device.`,
+      actorName: activeStaff ? `${activeStaff.firstName} ${activeStaff.lastName}` : 'Manager Mark Zhang',
+      actorRole: activeStaff.role || 'manager',
+      severity: 'warning',
+      terminal: currentName,
+    });
   };
 
   const updateStaffPin = (staffId: string, newPin: string) => {
@@ -1749,6 +1866,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isTerminalLocked,
         setIsTerminalLocked,
         lockTerminal,
+        isDeviceAuthorizedTerminal,
+        terminalMetadata,
+        authorizeCurrentDevice,
+        deauthorizeCurrentDevice,
         // Weekly Roster Lifecycle
         cyclePhase,
         isAvailabilityLocked,

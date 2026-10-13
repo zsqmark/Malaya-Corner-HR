@@ -1,0 +1,6 @@
+{
+  "summary": "Architectural blueprint and UX specification for Authorized In-Store Time Clock Terminal & Personal Device View. Details device authorization workflow via manager PIN, read-only personal device shift view, dedicated kiosk PIN punch flow, and 10-second auto-lock countdown timer.",
+  "updatedAt": "2026-10-13T12:09:56.571925668Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

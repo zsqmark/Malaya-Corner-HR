@@ -9,24 +9,30 @@ declare global {
 }
 
 // Function to create or retrieve the connection pool lazily.
-export const getPool = (): Pool => {
+export const getPool = (): Pool | null => {
   if (!global._postgresPool) {
     if (!process.env.SQL_HOST) {
-      throw new Error('SQL_HOST environment variable is not configured');
+      console.warn('[AI Studio] SQL_HOST environment variable is not configured — running with database mock fallback');
+      return null;
     }
-    global._postgresPool = new Pool({
-      host: process.env.SQL_HOST,
-      user: process.env.SQL_USER,
-      password: process.env.SQL_PASSWORD,
-      database: process.env.SQL_DB_NAME,
-      max: 10,
-      connectionTimeoutMillis: 15000,
-    });
+    try {
+      global._postgresPool = new Pool({
+        host: process.env.SQL_HOST,
+        user: process.env.SQL_USER,
+        password: process.env.SQL_PASSWORD,
+        database: process.env.SQL_DB_NAME,
+        max: 10,
+        connectionTimeoutMillis: 5000,
+      });
 
-    // Prevent unhandled pool-level errors from crashing the application
-    global._postgresPool.on('error', (err) => {
-      console.error('Unexpected error on idle SQL pool client:', err);
-    });
+      // Prevent unhandled pool-level errors from crashing the application
+      global._postgresPool.on('error', (err) => {
+        console.error('Unexpected error on idle SQL pool client:', err);
+      });
+    } catch (err) {
+      console.warn('[AI Studio] Could not create PostgreSQL pool — fallback active', err);
+      return null;
+    }
   }
   return global._postgresPool;
 };
@@ -35,7 +41,13 @@ export const getPool = (): Pool => {
 export const getDb = () => {
   if (!global._drizzleDb) {
     const pool = getPool();
-    global._drizzleDb = drizzle(pool, { schema });
+    if (!pool) return null;
+    try {
+      global._drizzleDb = drizzle(pool, { schema });
+    } catch (err) {
+      console.warn('[AI Studio] Could not initialize drizzle — fallback active', err);
+      return null;
+    }
   }
   return global._drizzleDb;
 };

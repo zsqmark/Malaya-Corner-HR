@@ -17,6 +17,7 @@ import {
   X,
   HelpCircle,
   CheckCircle2,
+  Tablet,
 } from 'lucide-react';
 import { ManagerPinResetModal } from './components/ManagerPinResetModal';
 
@@ -53,6 +54,8 @@ const MainContent: React.FC = () => {
     lockTerminal,
     addAuditLog,
     authenticateStaffPin,
+    isDeviceAuthorizedTerminal,
+    terminalMetadata,
   } = useApp();
   // Terminal Sign-In State
   const [terminalUserId, setTerminalUserId] = useState('');
@@ -136,7 +139,7 @@ const MainContent: React.FC = () => {
         actorName: `${selectedUser.firstName} (${selectedUser.position})`,
         actorRole: selectedUser.role,
         severity: 'warning',
-        terminal: 'Sunnybank POS Terminal #1',
+        terminal: terminalMetadata?.terminalName || (isDeviceAuthorizedTerminal ? 'Sunnybank POS Terminal #1' : 'Personal Device Portal'),
         metadata: { staffId: selectedUser.id, attemptedDigits: cleanPin.length },
       });
       return;
@@ -150,7 +153,7 @@ const MainContent: React.FC = () => {
       actorName: `${selectedUser.firstName} (${selectedUser.position})`,
       actorRole: selectedUser.role,
       severity: 'info',
-      terminal: 'Sunnybank POS Terminal #1',
+      terminal: terminalMetadata?.terminalName || (isDeviceAuthorizedTerminal ? 'Sunnybank POS Terminal #1' : 'Personal Device Portal'),
       metadata: { staffId: selectedUser.id, pinLength: cleanPin.length },
     });
 
@@ -245,6 +248,16 @@ const MainContent: React.FC = () => {
                 <Shield className="w-2.5 h-2.5 text-slate-400" />
                 Verified
               </span>
+              {isDeviceAuthorizedTerminal ? (
+                <span className="hidden xl:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[10px] font-semibold">
+                  <Tablet className="w-3 h-3 text-amber-700" />
+                  {terminalMetadata?.terminalName || 'Store Terminal'}
+                </span>
+              ) : (
+                <span className="hidden xl:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-medium border border-slate-200">
+                  Personal Device
+                </span>
+              )}
             </div>
           )}
 
