@@ -29,6 +29,7 @@ import {
   KeyRound,
   EyeOff,
   Edit3,
+  X,
 } from 'lucide-react';
 
 export const ManagerOnboarding: React.FC = () => {
@@ -252,7 +253,7 @@ export const ManagerOnboarding: React.FC = () => {
             onClick={() => setPinSuccessToast(null)}
             className="p-1 rounded-lg text-emerald-700 hover:text-emerald-950 hover:bg-emerald-100 cursor-pointer text-xs font-bold"
           >
-            ✕
+            <X className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -301,7 +302,7 @@ export const ManagerOnboarding: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase flex items-center justify-between">
-            <span>🍸 Bar Staff</span>
+            <span>Bar Staff</span>
             <Wine className="w-3.5 h-3.5 text-amber-600" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900 mt-1">{barStaffCount}</div>
@@ -312,7 +313,7 @@ export const ManagerOnboarding: React.FC = () => {
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase flex items-center justify-between">
-            <span>🍽️ Wait Staff</span>
+            <span>Wait Staff</span>
             <Utensils className="w-3.5 h-3.5 text-sky-600" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900 mt-1">{waitStaffCount}</div>
@@ -347,7 +348,7 @@ export const ManagerOnboarding: React.FC = () => {
               Invitation Successfully Dispatched for {createdInvite.staff.firstName} {createdInvite.staff.lastName}!
             </div>
             <p className="text-xs text-emerald-800">
-              Role: <strong className="uppercase">{createdInvite.staff.staffType === 'bar_staff' ? '🍸 Bar Staff' : '🍽️ Wait Staff'}</strong> • Position: {createdInvite.staff.position} • Invite Token: <code className="bg-emerald-100 px-1.5 py-0.5 rounded font-mono font-bold text-emerald-900">{createdInvite.inviteToken}</code>
+              Role: <strong className="uppercase inline-flex items-center gap-1">{createdInvite.staff.staffType === 'bar_staff' ? <><Wine className="w-3.5 h-3.5 inline text-amber-600" />Bar Staff</> : <><Utensils className="w-3.5 h-3.5 inline text-sky-600" />Wait Staff</>}</strong> • Position: {createdInvite.staff.position} • Invite Token: <code className="bg-emerald-100 px-1.5 py-0.5 rounded font-mono font-bold text-emerald-900">{createdInvite.inviteToken}</code>
             </p>
           </div>
 
@@ -370,7 +371,7 @@ export const ManagerOnboarding: React.FC = () => {
               onClick={() => setCreatedInvite(null)}
               className="text-slate-400 hover:text-slate-700 text-xs font-bold p-1 cursor-pointer"
             >
-              ✕
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -770,7 +771,7 @@ export const ManagerOnboarding: React.FC = () => {
                 onClick={() => setShowInviteModal(false)}
                 className="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -795,7 +796,7 @@ export const ManagerOnboarding: React.FC = () => {
                   >
                     <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
                       <Wine className="w-4 h-4 text-amber-600" />
-                      🍸 Bar Staff
+                      Bar Staff
                     </div>
                     <p className="text-[11px] text-slate-600 mt-1">
                       Certified for bar equipment & cocktail station. Can also perform wait staff floor jobs (cross-duty).
@@ -816,7 +817,7 @@ export const ManagerOnboarding: React.FC = () => {
                   >
                     <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
                       <Utensils className="w-4 h-4 text-sky-600" />
-                      🍽️ Wait Staff
+                      Wait Staff
                     </div>
                     <p className="text-[11px] text-slate-600 mt-1">
                       Dining room service, customer greeting, food delivery. Cannot perform bar station operations.
@@ -953,7 +954,7 @@ export const ManagerOnboarding: React.FC = () => {
                       ? 'bg-amber-100 text-amber-900 border border-amber-200'
                       : 'bg-sky-100 text-sky-900 border border-sky-200'
                   }`}>
-                    {(selectedStaff.staffType || 'wait_staff') === 'bar_staff' ? '🍸 Bar Staff' : '🍽️ Wait Staff'}
+                    {(selectedStaff.staffType || 'wait_staff') === 'bar_staff' ? <><Wine className="w-3 h-3 inline mr-1 text-amber-700" />Bar Staff</> : <><Utensils className="w-3 h-3 inline mr-1 text-sky-700" />Wait Staff</>}
                   </span>
                 </h2>
                 <p className="text-xs text-slate-500 font-medium">
@@ -965,7 +966,7 @@ export const ManagerOnboarding: React.FC = () => {
                 onClick={() => setSelectedStaffId(null)}
                 className="text-slate-400 hover:text-slate-700 font-bold p-1 rounded-lg cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -1238,7 +1239,7 @@ export const ManagerOnboarding: React.FC = () => {
                 onClick={() => setEditingPinStaff(null)}
                 className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 

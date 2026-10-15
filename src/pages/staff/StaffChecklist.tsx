@@ -19,6 +19,7 @@ import {
   Trash2,
   ZoomIn,
   Upload,
+  X,
 } from 'lucide-react';
 import { StaffType, ChecklistItem } from '../../types';
 
@@ -244,7 +245,7 @@ export const StaffChecklist: React.FC = () => {
                   : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
               }`}
             >
-              {staffType === 'bar_staff' ? '🍸 Bar Staff' : '🍽️ Wait Staff'}
+              {staffType === 'bar_staff' ? <><Wine className="w-3 h-3 inline mr-1 text-amber-700" />Bar Staff</> : <><Utensils className="w-3 h-3 inline mr-1 text-sky-700" />Wait Staff</>}
             </span>
           </div>
         </div>
@@ -407,7 +408,7 @@ export const StaffChecklist: React.FC = () => {
                           onClick={() => setPhotoErrors(prev => { const n = {...prev}; delete n[item.id]; return n; })}
                           className="text-red-400 hover:text-red-700 font-bold p-0.5 cursor-pointer"
                         >
-                          ✕
+                          <X className="h-4 w-4" />
                         </button>
                       </div>
                     )}
@@ -464,7 +465,7 @@ export const StaffChecklist: React.FC = () => {
                                   className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-[10px] shadow-sm cursor-pointer z-10"
                                   title="Remove photo"
                                 >
-                                  ✕
+                                  <X className="h-4 w-4" />
                                 </button>
                               </div>
                             ))}
@@ -595,7 +596,7 @@ export const StaffChecklist: React.FC = () => {
                 onClick={() => setPreviewingPhoto(null)}
                 className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center font-bold transition-colors cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 

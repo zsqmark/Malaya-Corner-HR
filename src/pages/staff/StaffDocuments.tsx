@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Search,
   Filter,
+  X,
 } from 'lucide-react';
 import { ChecklistPreviewModal } from '../../components/ChecklistPreviewModal';
 
@@ -291,7 +292,7 @@ export const StaffDocuments: React.FC = () => {
                 onClick={() => setPreviewDoc(null)}
                 className="text-slate-400 hover:text-slate-700 text-sm font-bold"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 

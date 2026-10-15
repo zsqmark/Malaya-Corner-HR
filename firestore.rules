@@ -24,74 +24,95 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isOwner(staffId) {
+      return isSignedIn() && request.auth.uid == staffId;
+    }
+
+    // Managers = email allowlist OR a staffUsers doc whose role == 'manager'.
+    // The role can ONLY be granted by an existing manager (see staffUsers write
+    // rules below), so a non-manager can never escalate themselves.
     function isManager() {
       return isSignedIn() && (
         request.auth.token.email == 'sunnybank@malayacorner.com.au' ||
         request.auth.token.email == 'mark.zhang@malayacorner.com.au' ||
-        exists(/databases/$(database)/documents/staffUsers/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/staffUsers/$(request.auth.uid)).data.role == 'manager'
+        (exists(/databases/$(database)/documents/staffUsers/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/staffUsers/$(request.auth.uid)).data.role == 'manager')
       );
     }
 
-    // Health check endpoint for connection verification
+    // Connectivity probe — contains no sensitive data, safe to be publicly readable.
     match /test/connection {
       allow read: if true;
       allow write: if false;
     }
 
-    // Staff Users Collection
+    // Staff Users: signed-in staff may read the directory.
+    // Writes are locked down so a non-manager can NEVER grant themselves the
+    // 'manager' role (privilege-escalation guard).
     match /staffUsers/{staffId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isSignedIn();
+      allow create: if isOwner(staffId)
+                    && isValidId(staffId)
+                    && (!('role' in incoming()) || incoming().role == 'staff');
+      allow update: if isManager()
+                    || (isOwner(staffId)
+                        && (!('role' in incoming()) || incoming().role == existing().role));
+      allow delete: if isManager();
     }
 
-    // Shifts Collection
+    // Shifts: managers manage the roster; all signed-in staff may view it.
     match /shifts/{shiftId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isSignedIn();
+      allow write: if isManager();
     }
 
-    // Weekly Availability Collection
+    // Weekly Availability: staff manage their own; managers may view/edit all.
     match /availabilities/{staffId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isSignedIn();
+      allow write: if isManager() || isOwner(staffId);
     }
 
-    // Clock Records Collection (Punch Clock)
+    // Clock Records: staff create their own punches; managers manage all.
     match /clockRecords/{recordId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isSignedIn();
+      allow create: if isManager()
+                    || (isSignedIn() && incoming().staffId == request.auth.uid);
+      allow update, delete: if isManager();
     }
 
-    // Tasks Collection
+    // Tasks: managers manage; a staff member may update a task assigned to them.
     match /tasks/{taskId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isSignedIn();
+      allow write: if isManager()
+                   || (isSignedIn() && ('assignedStaffId' in incoming())
+                       && incoming().assignedStaffId == request.auth.uid);
     }
 
-    // Daily Checklist Collection
+    // Daily Checklist: self-reported by staff; managers may manage all.
+    // NOTE: signed-in users may write any checklist — acceptable for low-sensitivity
+    // self-reports, but consider scoping to owner if docs carry a staffId field.
     match /checklists/{checklistId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isSignedIn();
+      allow write: if isManager() || isSignedIn();
     }
 
-    // Restaurant Documents Collection
+    // Restaurant Documents: managers manage; staff may view.
     match /documents/{documentId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isSignedIn();
+      allow write: if isManager();
     }
 
-    // Audit Logs Collection (Tamper-evident operational trail)
+    // Audit Logs: immutable tamper-evident trail. Only managers may append.
     match /auditLogs/{logId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if false; // Immutable audit log
+      allow read: if isManager();
+      allow create: if isManager();
+      allow update, delete: if false;
     }
 
-    // Global System State
+    // Global System State: managers manage; staff may view.
     match /systemState/{stateId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isSignedIn();
+      allow write: if isManager();
     }
   }
 }

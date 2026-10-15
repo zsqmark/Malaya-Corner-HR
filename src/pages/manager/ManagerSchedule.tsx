@@ -7,6 +7,9 @@ import {
   Sun,
   Moon,
   Users,
+  Wine,
+  Utensils,
+  ChefHat,
   CheckCircle2,
   Clock,
   Filter,
@@ -124,16 +127,16 @@ export const ManagerSchedule: React.FC = () => {
       s.role === 'manager' || s.position?.toLowerCase().includes('manager') || s.position?.toLowerCase().includes('supervisor');
     const isWait = (s: StaffUser) => !isBar(s) && !isKitchen(s) && !isManager(s);
 
-    if (filter === 'bar_staff') return [{ label: '🍸 Bar Staff', items: list.filter(isBar) }];
-    if (filter === 'wait_staff') return [{ label: '🍽️ Wait Staff / Floor Staff', items: list.filter(isWait) }];
-    if (filter === 'kitchen') return [{ label: '👨‍🍳 Kitchen Staff & Runners', items: list.filter(isKitchen) }];
-    if (filter === 'manager') return [{ label: '📋 Management & Supervisors', items: list.filter(isManager) }];
+    if (filter === 'bar_staff') return [{ label: 'Bar Staff', items: list.filter(isBar) }];
+    if (filter === 'wait_staff') return [{ label: 'Wait Staff / Floor Staff', items: list.filter(isWait) }];
+    if (filter === 'kitchen') return [{ label: 'Kitchen Staff & Runners', items: list.filter(isKitchen) }];
+    if (filter === 'manager') return [{ label: 'Management & Supervisors', items: list.filter(isManager) }];
 
     return [
-      { label: '🍽️ Wait Staff / Floor Staff', items: list.filter(isWait) },
-      { label: '🍸 Bar Staff', items: list.filter(isBar) },
-      { label: '👨‍🍳 Kitchen Staff & Runners', items: list.filter(isKitchen) },
-      { label: '📋 Management & Supervisors', items: list.filter(isManager) },
+      { label: 'Wait Staff / Floor Staff', items: list.filter(isWait) },
+      { label: 'Bar Staff', items: list.filter(isBar) },
+      { label: 'Kitchen Staff & Runners', items: list.filter(isKitchen) },
+      { label: 'Management & Supervisors', items: list.filter(isManager) },
     ].filter((group) => group.items.length > 0);
   };
 
@@ -1096,7 +1099,7 @@ export const ManagerSchedule: React.FC = () => {
                                             onClick={() => setQuickInputCell(null)}
                                             className="px-1 py-0.5 text-[9px] text-slate-500 hover:bg-slate-100 rounded"
                                           >
-                                            ✕
+                                            <X className="h-4 w-4" />
                                           </button>
                                           <button
                                             type="button"
@@ -1294,7 +1297,7 @@ export const ManagerSchedule: React.FC = () => {
                                             onClick={() => setQuickInputCell(null)}
                                             className="px-1 py-0.5 text-[9px] text-slate-500 hover:bg-slate-100 rounded"
                                           >
-                                            ✕
+                                            <X className="h-4 w-4" />
                                           </button>
                                           <button
                                             type="button"
@@ -1485,7 +1488,7 @@ export const ManagerSchedule: React.FC = () => {
                                   const isAvail = checkStaffAvailable(u.id, day, 'lunch');
                                   return (
                                     <option key={u.id} value={u.id}>
-                                      {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}) {isAvail ? '— Available' : ''}
+                                      {isAvail ? <Check className="inline h-3 w-3 mr-0.5" /> : ''}{u.firstName} {u.lastName} ({u.position}) {isAvail ? '— Available' : ''}
                                     </option>
                                   );
                                 })}
@@ -1561,7 +1564,7 @@ export const ManagerSchedule: React.FC = () => {
                                   const isAvail = checkStaffAvailable(u.id, day, 'dinner');
                                   return (
                                     <option key={u.id} value={u.id}>
-                                      {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}) {isAvail ? '— Available' : ''}
+                                      {isAvail ? <Check className="inline h-3 w-3 mr-0.5" /> : ''}{u.firstName} {u.lastName} ({u.position}) {isAvail ? '— Available' : ''}
                                     </option>
                                   );
                                 })}
@@ -1614,7 +1617,7 @@ export const ManagerSchedule: React.FC = () => {
                 onClick={() => setShowAddModal(false)}
                 className="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -1766,7 +1769,7 @@ export const ManagerSchedule: React.FC = () => {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      🍽️ Wait
+                      <Utensils className="inline h-3 w-3 mr-1" />Wait
                     </button>
                     <button
                       type="button"
@@ -1777,7 +1780,7 @@ export const ManagerSchedule: React.FC = () => {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      🍸 Bar
+                      <Wine className="inline h-3 w-3 mr-1" />Bar
                     </button>
                     <button
                       type="button"
@@ -1788,7 +1791,7 @@ export const ManagerSchedule: React.FC = () => {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      👨‍🍳 Kitchen
+                      <ChefHat className="inline h-3 w-3 mr-1" />Kitchen
                     </button>
                   </div>
                 </div>
@@ -1812,7 +1815,7 @@ export const ManagerSchedule: React.FC = () => {
                         const isAvail = checkStaffAvailable(u.id, newShiftDay, newShiftType);
                         return (
                           <option key={u.id} value={u.id}>
-                            {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}){isAvail ? ' — Available' : ''}
+                            {isAvail ? <Check className="inline h-3 w-3 mr-0.5" /> : ''}{u.firstName} {u.lastName} ({u.position}){isAvail ? ' — Available' : ''}
                           </option>
                         );
                       })}
@@ -1919,7 +1922,7 @@ export const ManagerSchedule: React.FC = () => {
                 onClick={() => setEditingShift(null)}
                 className="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -2063,7 +2066,7 @@ export const ManagerSchedule: React.FC = () => {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      🍽️ Wait
+                      <Utensils className="inline h-3 w-3 mr-1" />Wait
                     </button>
                     <button
                       type="button"
@@ -2074,7 +2077,7 @@ export const ManagerSchedule: React.FC = () => {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      🍸 Bar
+                      <Wine className="inline h-3 w-3 mr-1" />Bar
                     </button>
                     <button
                       type="button"
@@ -2085,7 +2088,7 @@ export const ManagerSchedule: React.FC = () => {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      👨‍🍳 Kitchen
+                      <ChefHat className="inline h-3 w-3 mr-1" />Kitchen
                     </button>
                   </div>
                 </div>
@@ -2109,7 +2112,7 @@ export const ManagerSchedule: React.FC = () => {
                         const isAvail = checkStaffAvailable(u.id, editDay, editShiftType);
                         return (
                           <option key={u.id} value={u.id}>
-                            {isAvail ? '✓ ' : ''}{u.firstName} {u.lastName} ({u.position}){isAvail ? ' — Available' : ''}
+                            {isAvail ? <Check className="inline h-3 w-3 mr-0.5" /> : ''}{u.firstName} {u.lastName} ({u.position}){isAvail ? ' — Available' : ''}
                           </option>
                         );
                       })}
@@ -2314,7 +2317,7 @@ export const ManagerSchedule: React.FC = () => {
                 onClick={() => setShowCopyDayModal(false)}
                 className="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 

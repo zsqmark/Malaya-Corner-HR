@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Building,
   User,
+  X,
 } from 'lucide-react';
 
 export const ManagerDocuments: React.FC = () => {
@@ -312,7 +313,7 @@ export const ManagerDocuments: React.FC = () => {
                 onClick={() => setShowUploadModal(false)}
                 className="text-slate-400 hover:text-slate-700 font-bold"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 

@@ -27,6 +27,8 @@ import {
   Image as ImageIcon,
   Eye,
   ZoomIn,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 
 const WEEK_DAYS: { key: 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN'; label: string }[] = [
@@ -456,8 +458,8 @@ export const ManagerTasks: React.FC = () => {
                   className="p-1.5 border border-slate-300 rounded-lg text-xs bg-white"
                 >
                   <option value="all">All Roles</option>
-                  <option value="bar_staff">🍸 Bar Staff Only</option>
-                  <option value="wait_staff">🍽️ Wait Staff / Floor</option>
+                  <option value="bar_staff"><Wine className="inline h-4 w-4 mr-1" />Bar Staff Only</option>
+                  <option value="wait_staff"><Utensils className="inline h-4 w-4 mr-1" />Wait Staff / Floor</option>
                 </select>
 
                 {/* Assignee Filter */}
@@ -830,7 +832,7 @@ export const ManagerTasks: React.FC = () => {
                 }}
                 className="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -930,7 +932,7 @@ export const ManagerTasks: React.FC = () => {
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    🍽️ Wait Staff / Floor
+                    <Utensils className="w-4 h-4 inline mr-1" />Wait Staff / Floor
                   </button>
                   <button
                     type="button"
@@ -941,14 +943,14 @@ export const ManagerTasks: React.FC = () => {
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    🍸 Bar Staff Only
+                    <Wine className="w-4 h-4 inline mr-1" />Bar Staff Only
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1">
                   {targetRole === 'bar_staff'
-                    ? '⚠️ Strictly Bar Staff certified. Wait staff cannot perform bar duties.'
+                    ? <><AlertTriangle className="w-3 h-3 inline mr-1 text-amber-600" />Strictly Bar Staff certified. Wait staff cannot perform bar duties.</>
                     : targetRole === 'wait_staff'
-                    ? 'ℹ️ Both Wait Staff and Bar Staff (cross-duty) can execute this task.'
+                    ? <><Info className="w-3 h-3 inline mr-1" />Both Wait Staff and Bar Staff (cross-duty) can execute this task.</>
                     : 'Any team member can be assigned or claim this task.'}
                 </p>
               </div>
@@ -965,21 +967,21 @@ export const ManagerTasks: React.FC = () => {
                   className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-medium"
                 >
                   <option value="unassigned">
-                    👥 Unassigned (Open Team Task — Eligible staff can pick up)
+                    <Users className="inline h-4 w-4 mr-1" />Unassigned (Open Team Task — Eligible staff can pick up)
                   </option>
-                  <optgroup label="🍸 Bar Staff (Can do both Bar and Floor tasks)">
+                  <optgroup label="Bar Staff (Can do both Bar and Floor tasks)">
                     {barStaffList.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        🍸 {u.firstName} {u.lastName} ({u.position}) — Fully Qualified
-                      </option>
-                    ))}
+                        <option key={u.id} value={u.id}>
+                          <Wine className="inline h-4 w-4 mr-1" />{u.firstName} {u.lastName} ({u.position}) — Fully Qualified
+                        </option>
+                      ))}
                   </optgroup>
-                  <optgroup label="🍽️ Wait Staff (Floor tasks only)">
+                  <optgroup label="Wait Staff (Floor tasks only)">
                     {waitStaffList.map((u) => {
                       const disabled = targetRole === 'bar_staff';
                       return (
                         <option key={u.id} value={u.id} disabled={disabled}>
-                          🍽️ {u.firstName} {u.lastName} ({u.position})
+                          <Utensils className="inline h-4 w-4 mr-1" />{u.firstName} {u.lastName} ({u.position})
                           {disabled ? ' — [NOT QUALIFIED for Bar]' : ''}
                         </option>
                       );
@@ -1105,7 +1107,7 @@ export const ManagerTasks: React.FC = () => {
                 onClick={() => setShowCreateChecklistModal(false)}
                 className="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -1256,7 +1258,7 @@ export const ManagerTasks: React.FC = () => {
                 onClick={() => setEditingChecklistItem(null)}
                 className="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
@@ -1408,7 +1410,7 @@ export const ManagerTasks: React.FC = () => {
                 onClick={() => setPreviewingPhoto(null)}
                 className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center font-bold transition-colors cursor-pointer"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
