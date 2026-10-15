@@ -157,7 +157,7 @@ export const ManagerAuditLog: React.FC = () => {
       case 'sunday_close':
         return {
           label: 'Sunday 22:00 Close',
-          bg: 'bg-purple-600 text-white border-purple-700',
+          bg: 'bg-indigo-600 text-white border-indigo-700',
           icon: Clock,
         };
       case 'timesheet_approval':

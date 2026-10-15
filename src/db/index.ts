@@ -12,7 +12,10 @@ declare global {
 export const getPool = (): Pool | null => {
   if (!global._postgresPool) {
     if (!process.env.SQL_HOST) {
-      console.warn('[AI Studio] SQL_HOST environment variable is not configured — running with database mock fallback');
+      if (process.env.NODE_ENV === 'production' && process.env.DB_REQUIRED === 'true') {
+        throw new Error('[DB] SQL_HOST is not configured and DB_REQUIRED=true — refusing to start without a database.');
+      }
+      console.warn('[DB] SQL_HOST not configured — running with in-memory mock fallback (data is NOT persisted). Set SQL_HOST (and DB_REQUIRED=true in production) for real persistence.');
       return null;
     }
     try {

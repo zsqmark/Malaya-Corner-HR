@@ -521,7 +521,7 @@ export const ManagerSchedule: React.FC = () => {
                   </span>
                 )}
                 {cyclePhase === 'CLOSED_EXPORTED' && (
-                  <span className="px-2.5 py-1 bg-purple-500/20 text-purple-300 border border-purple-400/30 rounded-full text-xs font-extrabold flex items-center gap-1.5">
+                  <span className="px-2.5 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 rounded-full text-xs font-extrabold flex items-center gap-1.5">
                     <Archive className="w-3.5 h-3.5" />
                     4. Sunday 22:00 Close: Exported & Reset
                   </span>
@@ -623,14 +623,14 @@ export const ManagerSchedule: React.FC = () => {
             <div
               className={`min-w-[210px] sm:min-w-[240px] lg:min-w-0 flex-1 shrink-0 snap-start p-3 rounded-xl border transition-all ${
                 cyclePhase === 'CLOSED_EXPORTED'
-                  ? 'bg-purple-500/20 border-purple-400 text-white font-bold ring-1 ring-purple-400'
+                  ? 'bg-indigo-500/20 border-indigo-400 text-white font-bold ring-1 ring-indigo-400'
                   : 'bg-white/5 border-white/10 text-slate-400'
               }`}
             >
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <span className="font-bold">Stage 4</span>
                 {cyclePhase === 'CLOSED_EXPORTED' ? (
-                  <span className="text-purple-300 font-bold">Active Now</span>
+                  <span className="text-indigo-300 font-bold">Active Now</span>
                 ) : (
                   <Archive className="w-3.5 h-3.5 text-slate-500" />
                 )}
@@ -2393,7 +2393,7 @@ export const ManagerSchedule: React.FC = () => {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-purple-100 text-purple-700 rounded-xl">
+              <div className="p-3 bg-indigo-100 text-indigo-700 rounded-xl">
                 <Clock className="w-6 h-6" />
               </div>
               <div className="flex-1">
@@ -2406,9 +2406,9 @@ export const ManagerSchedule: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-purple-50/80 border border-purple-200 rounded-xl p-3.5 text-xs text-purple-950 space-y-2">
-              <div className="font-bold flex items-center gap-1.5 text-purple-900">
-                <FileSpreadsheet className="w-4 h-4 text-purple-600" />
+            <div className="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3.5 text-xs text-indigo-950 space-y-2">
+              <div className="font-bold flex items-center gap-1.5 text-indigo-900">
+                <FileSpreadsheet className="w-4 h-4 text-indigo-600" />
                 What happens during Sunday 22:00 close:
               </div>
               <ul className="list-disc list-inside space-y-1 text-slate-700 text-[11px]">
@@ -2429,7 +2429,7 @@ export const ManagerSchedule: React.FC = () => {
               <button
                 type="button"
                 onClick={handleConfirmSundayClose}
-                className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-md shadow-purple-200 flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-200 flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 <span>Export Timesheet (.xlsx) & Reset Timetable</span>

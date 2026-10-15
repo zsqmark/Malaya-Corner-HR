@@ -732,8 +732,8 @@ export const ManagerTasks: React.FC = () => {
                         </span>
                       )}
                       {item.requiresPhoto ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1">
-                          <Camera className="w-3 h-3 text-purple-600" />
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 flex items-center gap-1">
+                          <Camera className="w-3 h-3 text-indigo-600" />
                           Photo Mandatory (Limit: {item.maxPhotos || 1} {item.maxPhotos === 1 ? 'pic' : 'pics'})
                         </span>
                       ) : item.maxPhotos && item.maxPhotos > 0 ? (
@@ -1162,7 +1162,7 @@ export const ManagerTasks: React.FC = () => {
               </div>
 
               {/* Photo Upload Configuration & Limit */}
-              <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-200 space-y-2.5">
+              <div className="p-3 bg-indigo-50/70 rounded-xl border border-indigo-200 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <input
@@ -1174,17 +1174,17 @@ export const ManagerTasks: React.FC = () => {
                         setNewChecklistAllowPhoto(checked);
                         if (!checked) setNewChecklistRequiresPhoto(false);
                       }}
-                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
                     />
-                    <label htmlFor="allowPhoto" className="text-xs font-bold text-purple-900 cursor-pointer flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-purple-600" />
+                    <label htmlFor="allowPhoto" className="text-xs font-bold text-indigo-900 cursor-pointer flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-indigo-600" />
                       Allow Picture Uploads for this Question
                     </label>
                   </div>
                 </div>
 
                 {newChecklistAllowPhoto && (
-                  <div className="space-y-2 pl-6 pt-1 border-t border-purple-100">
+                  <div className="space-y-2 pl-6 pt-1 border-t border-indigo-100">
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <label className="font-bold text-slate-800 text-[11px] block">
@@ -1197,7 +1197,7 @@ export const ManagerTasks: React.FC = () => {
                       <select
                         value={newChecklistMaxPhotos}
                         onChange={(e) => setNewChecklistMaxPhotos(Number(e.target.value))}
-                        className="p-1.5 px-3 border border-purple-300 rounded-lg bg-white font-bold text-purple-900 text-xs focus:ring-2 focus:ring-purple-500"
+                        className="p-1.5 px-3 border border-indigo-300 rounded-lg bg-white font-bold text-indigo-900 text-xs focus:ring-2 focus:ring-indigo-500"
                       >
                         <option value={1}>1 picture limit</option>
                         <option value={2}>2 pictures limit</option>
@@ -1213,9 +1213,9 @@ export const ManagerTasks: React.FC = () => {
                         id="requirePhoto"
                         checked={newChecklistRequiresPhoto}
                         onChange={(e) => setNewChecklistRequiresPhoto(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500"
+                        className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500"
                       />
-                      <label htmlFor="requirePhoto" className="text-[11px] text-purple-950 font-medium cursor-pointer">
+                      <label htmlFor="requirePhoto" className="text-[11px] text-indigo-950 font-medium cursor-pointer">
                         <strong>Mandatory:</strong> Staff must upload at least 1 photo to complete this item
                       </label>
                     </div>
@@ -1313,7 +1313,7 @@ export const ManagerTasks: React.FC = () => {
               </div>
 
               {/* Photo Upload Configuration & Limit */}
-              <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-200 space-y-2.5">
+              <div className="p-3 bg-indigo-50/70 rounded-xl border border-indigo-200 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <input
@@ -1325,17 +1325,17 @@ export const ManagerTasks: React.FC = () => {
                         setEditChecklistAllowPhoto(checked);
                         if (!checked) setEditChecklistRequiresPhoto(false);
                       }}
-                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
                     />
-                    <label htmlFor="editAllowPhoto" className="text-xs font-bold text-purple-900 cursor-pointer flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-purple-600" />
+                    <label htmlFor="editAllowPhoto" className="text-xs font-bold text-indigo-900 cursor-pointer flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-indigo-600" />
                       Allow Picture Uploads for this Question
                     </label>
                   </div>
                 </div>
 
                 {editChecklistAllowPhoto && (
-                  <div className="space-y-2 pl-6 pt-1 border-t border-purple-100">
+                  <div className="space-y-2 pl-6 pt-1 border-t border-indigo-100">
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <label className="font-bold text-slate-800 text-[11px] block">
@@ -1348,7 +1348,7 @@ export const ManagerTasks: React.FC = () => {
                       <select
                         value={editChecklistMaxPhotos}
                         onChange={(e) => setEditChecklistMaxPhotos(Number(e.target.value))}
-                        className="p-1.5 px-3 border border-purple-300 rounded-lg bg-white font-bold text-purple-900 text-xs focus:ring-2 focus:ring-purple-500"
+                        className="p-1.5 px-3 border border-indigo-300 rounded-lg bg-white font-bold text-indigo-900 text-xs focus:ring-2 focus:ring-indigo-500"
                       >
                         <option value={1}>1 picture limit</option>
                         <option value={2}>2 pictures limit</option>
@@ -1364,9 +1364,9 @@ export const ManagerTasks: React.FC = () => {
                         id="editRequirePhoto"
                         checked={editChecklistRequiresPhoto}
                         onChange={(e) => setEditChecklistRequiresPhoto(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded text-purple-600 focus:ring-purple-500"
+                        className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500"
                       />
-                      <label htmlFor="editRequirePhoto" className="text-[11px] text-purple-950 font-medium cursor-pointer">
+                      <label htmlFor="editRequirePhoto" className="text-[11px] text-indigo-950 font-medium cursor-pointer">
                         <strong>Mandatory:</strong> Staff must upload at least 1 photo to complete this item
                       </label>
                     </div>

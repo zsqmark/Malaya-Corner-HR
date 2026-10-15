@@ -364,8 +364,8 @@ export const StaffChecklist: React.FC = () => {
                       )}
 
                       {item.requiresPhoto && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200">
-                          <Camera className="w-3 h-3 text-purple-600" />
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-900 border border-indigo-200">
+                          <Camera className="w-3 h-3 text-indigo-600" />
                           Photo Required (Limit: {item.maxPhotos || 1} {item.maxPhotos === 1 ? 'picture' : 'pictures'})
                         </span>
                       )}
@@ -415,10 +415,10 @@ export const StaffChecklist: React.FC = () => {
 
                     {/* Photo Upload Section for staff */}
                     {(item.requiresPhoto || (item.maxPhotos && item.maxPhotos > 0)) && !item.isCompleted && (
-                      <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-200/80 space-y-2.5">
+                      <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-200/80 space-y-2.5">
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <div className="flex items-center gap-1.5">
-                            <Camera className="w-4 h-4 text-purple-600" />
+                            <Camera className="w-4 h-4 text-indigo-600" />
                             <span className="text-xs font-bold text-slate-900">
                               Photo Evidence
                             </span>
@@ -440,7 +440,7 @@ export const StaffChecklist: React.FC = () => {
                             {item.photos!.map((photoUrl, pIdx) => (
                               <div
                                 key={pIdx}
-                                className="relative group w-16 h-16 rounded-xl overflow-hidden border-2 border-purple-200 bg-white shadow-2xs"
+                                className="relative group w-16 h-16 rounded-xl overflow-hidden border-2 border-indigo-200 bg-white shadow-2xs"
                               >
                                 <img
                                   src={photoUrl}
@@ -486,7 +486,7 @@ export const StaffChecklist: React.FC = () => {
                               />
                               <label
                                 htmlFor={`file-input-${item.id}`}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer transition-colors"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer transition-colors"
                               >
                                 <Camera className="w-3.5 h-3.5" />
                                 <span>Upload / Capture Picture</span>
@@ -587,7 +587,7 @@ export const StaffChecklist: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-700/30 flex flex-col max-h-[90vh]">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-purple-600" />
+                <ImageIcon className="w-4 h-4 text-indigo-600" />
                 <h3 className="font-bold text-sm text-slate-900 line-clamp-1">
                   {previewingPhoto.title}
                 </h3>

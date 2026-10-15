@@ -11,6 +11,11 @@ dotenv.config();
 // Ensure uncaught exceptions/rejections don't crash the server process
 process.on("uncaughtException", (err) => {
   console.error("[Server] Uncaught Exception:", err);
+  // In production, a corrupted process should not keep serving — let the
+  // orchestrator restart it. In dev we keep running for a better DX.
+  if (process.env.NODE_ENV === "production") {
+    process.exit(1);
+  }
 });
 
 process.on("unhandledRejection", (reason, promise) => {
@@ -42,7 +47,7 @@ async function startServer() {
       res.json({ success: true, user });
     } catch (error: any) {
       console.error("Error syncing user:", error);
-      res.status(500).json({ error: error.message || "Failed to sync user" });
+      res.status(500).json({ error: "Failed to sync user" });
     }
   });
 
@@ -53,7 +58,7 @@ async function startServer() {
       res.json(usersList);
     } catch (error: any) {
       console.error("Failed to fetch users:", error);
-      res.status(500).json({ error: error.message || "Failed to fetch users" });
+      res.status(500).json({ error: "Failed to fetch users" });
     }
   });
 

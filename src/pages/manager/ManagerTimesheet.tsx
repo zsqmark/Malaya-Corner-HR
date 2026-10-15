@@ -268,10 +268,10 @@ export const ManagerTimesheet: React.FC = () => {
           <div className="grid grid-cols-2 gap-2 w-full sm:w-auto">
             <button
               onClick={() => executeSundayCloseAndTimesheetExport()}
-              className="px-3 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 active:scale-95 text-purple-200 border border-purple-400/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="px-3 py-2.5 bg-indigo-500/20 hover:bg-indigo-500/30 active:scale-95 text-indigo-200 border border-indigo-400/30 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               title="Export timesheet and reset weekly timetable (Sunday 22:00 Protocol)"
             >
-              <Clock className="w-3.5 h-3.5 text-purple-300 shrink-0" />
+              <Clock className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
               <span className="truncate">Sunday 22:00 Close</span>
             </button>
 

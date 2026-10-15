@@ -89,7 +89,7 @@ export const ManagerDocuments: React.FC = () => {
     if (target === 'role:manager') {
       return {
         label: 'Managers Only',
-        className: 'bg-purple-100 text-purple-800 border border-purple-200',
+        className: 'bg-indigo-100 text-indigo-800 border border-indigo-200',
       };
     }
     if (target === 'role:bar_staff') {
@@ -153,7 +153,7 @@ export const ManagerDocuments: React.FC = () => {
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase">Role-Specific Access</div>
-          <div className="text-2xl font-black text-purple-600 mt-1">{roleRestrictedCount} Files</div>
+          <div className="text-2xl font-black text-indigo-600 mt-1">{roleRestrictedCount} Files</div>
           <div className="text-[11px] text-slate-500 mt-0.5">Manager, Bar & Wait staff roles</div>
         </div>
 

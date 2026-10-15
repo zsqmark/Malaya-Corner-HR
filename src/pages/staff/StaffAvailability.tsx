@@ -179,19 +179,19 @@ export const StaffAvailability: React.FC = () => {
           </button>
         </div>
       ) : cyclePhase === 'CLOSED_EXPORTED' ? (
-        <div className="p-4 bg-purple-50 border border-purple-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-purple-950 shadow-xs">
+        <div className="p-4 bg-indigo-50 border border-indigo-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-indigo-950 shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-purple-600 text-white rounded-xl shadow-xs shrink-0">
+            <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-xs shrink-0">
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <div className="font-bold text-sm text-purple-950 flex items-center gap-2">
+              <div className="font-bold text-sm text-indigo-950 flex items-center gap-2">
                 <span>Sunday 22:00 Trade Close & Timetable Reset</span>
-                <span className="text-[10px] bg-purple-200 text-purple-900 font-bold px-2 py-0.5 rounded-full border border-purple-400">
+                <span className="text-[10px] bg-indigo-200 text-indigo-900 font-bold px-2 py-0.5 rounded-full border border-indigo-400">
                   Exported & Reset
                 </span>
               </div>
-              <div className="text-purple-800 mt-0.5 leading-relaxed">
+              <div className="text-indigo-800 mt-0.5 leading-relaxed">
                 Sunday 22:00 trade close reached. Current week timesheet has been exported (.xlsx) and the weekly availability timetable has been reset.
               </div>
             </div>

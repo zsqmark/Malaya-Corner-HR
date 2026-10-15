@@ -461,8 +461,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return localStorage.getItem(STORAGE_KEYS.LAST_EXPORT_AT) || null;
   });
 
-  const currentWeekLabel = 'Monday 7 September – Sunday 13 September 2026';
-  const nextWeekLabel = 'Monday 14 September – Sunday 20 September 2026';
+  // Dynamically compute the current/next Monday–Sunday week labels (Australia,
+  // week starts Monday) instead of hardcoding an expired date.
+  const weekStart = (() => {
+    const d = new Date();
+    const day = (d.getDay() + 6) % 7; // Monday = 0
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
+  const fmtWeekdayDate = (d: Date) =>
+    d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/,/g, '');
+  const addDays = (d: Date, n: number) => {
+    const r = new Date(d);
+    r.setDate(d.getDate() + n);
+    return r;
+  };
+  const curEnd = addDays(weekStart, 6);
+  const nextStart = addDays(weekStart, 7);
+  const nextEnd = addDays(weekStart, 13);
+  const currentWeekLabel = `${fmtWeekdayDate(weekStart)} – ${fmtWeekdayDate(curEnd)} ${weekStart.getFullYear()}`;
+  const nextWeekLabel = `${fmtWeekdayDate(nextStart)} – ${fmtWeekdayDate(nextEnd)} ${nextStart.getFullYear()}`;
 
   // Submissions are locked between Sunday 14:30 and the time the manager sends out the schedule
   const isAvailabilityLocked = cyclePhase === 'LOCKED';
